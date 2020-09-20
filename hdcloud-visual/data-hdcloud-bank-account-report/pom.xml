@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.hodo</groupId>
+        <artifactId>hdcloud-visual</artifactId>
+        <version>V2.0.1</version>
+    </parent>
+
+    <groupId>com.hodo.iiot.group2</groupId>
+    <artifactId>data-hdcloud-bank-account-report</artifactId>
+    <version>V2.0.1</version>
+    <name>data-hdcloud-bank-account-report</name>
+    <description>data-hdcloud-bank-account-report for Spring Boot</description>
+    <properties>
+        <java.version>1.8</java.version>
+        <commons-dbcp.version>1.4</commons-dbcp.version>
+    </properties>
+    <dependencies>
+        <!--必备: spring boot web-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <!--必备: 注册中心客户端-->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+            <version>${spring-cloud-alibaba.version}</version>
+        </dependency>
+        <!--必备: 配置中心客户端-->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+            <version>${spring-cloud-alibaba.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.hodo</groupId>
+            <artifactId>hdcloud-common-core</artifactId>
+            <version>V2.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.hodo</groupId>
+            <artifactId>hdcloud-common-datasource</artifactId>
+            <version>V2.0.1</version>
+        </dependency>
+        <!--必备: 操作数据源相关-->
+        <dependency>
+            <groupId>com.hodo</groupId>
+            <artifactId>hdcloud-common-data</artifactId>
+            <version>V2.0.1</version>
+        </dependency>
+        <!--必备：pigx安全模块-->
+        <dependency>
+            <groupId>com.hodo</groupId>
+            <artifactId>hdcloud-common-security</artifactId>
+            <version>V2.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.hodo</groupId>
+            <artifactId>hdcloud-common-log</artifactId>
+            <version>V2.0.1</version>
+        </dependency>
+
+        <!--测试: spring boot test-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+        </dependency>
+        <!--server-api-->
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+        </dependency>
+        <!--undertow容器-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-undertow</artifactId>
+        </dependency>
+    </dependencies>
+
+
+    <repositories>
+        <!--		&lt;!&ndash;阿里云私服&ndash;&gt;-->
+        <repository>
+            <id>aliyun</id>
+            <name>aliyun</name>
+            <url>http://maven.aliyun.com/nexus/content/groups/public</url>
+        </repository>
+        <!--		&lt;!&ndash;gitee 私服&ndash;&gt;-->
+        <repository>
+            <id>admin</id>
+            <name>admin123</name>
+            <url>http://10.10.65.11:8081/repository/hd-maven/</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <layout>default</layout>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>admin</id>
+            <name>admin123</name>
+            <url>http://10.10.65.11:8081/repository/hd-maven/</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <layout>default</layout>
+        </pluginRepository>
+    </pluginRepositories>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

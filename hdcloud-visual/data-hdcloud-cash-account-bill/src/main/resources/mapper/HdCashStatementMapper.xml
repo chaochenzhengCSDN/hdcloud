@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~
+  ~      Copyright (c) 2018-2025, hodo All rights reserved.
+  ~
+  ~  Redistribution and use in source and binary forms, with or without
+  ~  modification, are permitted provided that the following conditions are met:
+  ~
+  ~ Redistributions of source code must retain the above copyright notice,
+  ~  this list of conditions and the following disclaimer.
+  ~  Redistributions in binary form must reproduce the above copyright
+  ~  notice, this list of conditions and the following disclaimer in the
+  ~  documentation and/or other materials provided with the distribution.
+  ~  Neither the name of the pig4cloud.com developer nor the names of its
+  ~  contributors may be used to endorse or promote products derived from
+  ~  this software without specific prior written permission.
+  ~  Author: 江苏红豆工业互联网有限公司
+  ~
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.hodo.iiot.group2.data.hdcloud.cash.account.base.mapper.HdCashStatementMapper">
+
+  <resultMap id="hdCashStatementMap" type="com.hodo.iiot.group2.data.hdcloud.cash.account.bill.entity.HdCashStatement">
+                  <id property="id" column="id"/>
+                        <result property="accountDate" column="account_date"/>
+                        <result property="no" column="no"/>
+                        <result property="subjects" column="subjects"/>
+                        <result property="remark" column="remark"/>
+                        <result property="income" column="income"/>
+                        <result property="pay" column="pay"/>
+                        <result property="createBy" column="create_by"/>
+                        <result property="tenantId" column="tenant_id"/>
+                        <result property="accountType" column="account_type"/>
+                        <result property="my_subjects" column="mySubjects"/>
+                        <result property="sourceType" column="source_type"/>
+                        <result property="by2" column="by2"/>
+                        <result property="by3" column="by3"/>
+                        <result property="createTime" column="create_time"/>
+                        <result property="createById" column="create_by_id"/>
+                        <result property="unitId" column="unit_id"/>
+            </resultMap>
+      <select id="selectDistinctString" resultType="java.lang.String">
+            select distinct ${str} from hd_cash_statement where ${param} = #{val} and tenant_id = #{tenantId}
+      </select>
+
+    <select id="selectList" resultMap="hdCashStatementMap">
+        select hcs.*,hcu.unit_name unitName FROM hd_cash_statement hcs
+        LEFT JOIN hd_cash_unit hcu
+        ON hcs.unit_id = hcu.id
+        WHERE hcs.tenant_id = #{tenantId}
+        <if test="startTime!=null and startTime!=''">
+            and date_format(hcs.account_date, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(#{startTime}, '%Y-%m-%d')
+        </if>
+        <if test="endTime!=null and endTime!=''">
+            and date_format(hcs.account_date, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{endTime}, '%Y-%m-%d')
+        </if>
+        <if test="remark!=null and remark!=''">
+            and replace(hcs.remark,'''','') like CONCAT('%',#{remark},'%')
+        </if>
+        <if test="unitId!=null and unitId!=''">
+            and hcs.unit_id = #{unitId}
+        </if>
+        <if test="subjects!=null and subjects!=''">
+            and replace(hcs.subjects,'''','') like CONCAT('%',#{subjects},'%')
+        </if>
+
+        ORDER BY hcs.account_data DESC,ABS(hcs.by2) desc
+        limit ${page},${limit}
+    </select>
+
+    <select id="selectAll" resultMap="hdCashStatementMap">
+        select hcs.*,hcu.unit_name unitName FROM hd_cash_statement hcs
+        LEFT JOIN hd_cash_unit hcu
+        ON hcs.unit_id = hcu.id
+        WHERE hcs.tenant_id = #{tenantId}
+        <if test="startTime!=null and startTime!=''">
+            and date_format(hcs.account_date, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(#{startTime}, '%Y-%m-%d')
+        </if>
+        <if test="endTime!=null and endTime!=''">
+            and date_format(hcs.account_date, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{endTime}, '%Y-%m-%d')
+        </if>
+        <if test="remark!=null and remark!=''">
+            and replace(hcs.remark,'''','') like CONCAT('%',#{remark},'%')
+        </if>
+        <if test="unitId!=null and unitId!=''">
+            and hcs.unit_id = #{unitId}
+        </if>
+        <if test="subjects!=null and subjects!=''">
+            and replace(hcs.subjects,'''','') like CONCAT('%',#{subjects},'%')
+        </if>
+        ORDER BY hcs.account_data DESC,ABS(hcs.by2) desc
+    </select>
+
+    <select id="selectTotal" resultType="java.util.HashMap">
+        select IFNULL(sum(pay),0)pay,IFNULL(sum(income),0)income,count(*)total FROM hd_cash_statement hcs
+        LEFT JOIN hd_cash_unit hcu
+        ON hcs.unit_id = hcu.id
+        WHERE hcs.tenant_id = #{tenantId}
+        <if test="startTime!=null and startTime!=''">
+            and date_format(hcs.account_date, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(#{startTime}, '%Y-%m-%d')
+        </if>
+        <if test="endTime!=null and endTime!=''">
+            and date_format(hcs.account_date, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{endTime}, '%Y-%m-%d')
+        </if>
+        <if test="remark!=null and remark!=''">
+            and replace(hcs.remark,'''','') like CONCAT('%',#{remark},'%')
+        </if>
+        <if test="unitId!=null and unitId!=''">
+            and hcs.unit_id = #{unitId}
+        </if>
+        <if test="subjects!=null and subjects!=''">
+            and replace(hcs.subjects,'''','') like CONCAT('%',#{subjects},'%')
+        </if>
+    </select>
+
+    <select id="selectMaxNo" resultType="java.lang.Integer">
+        select max(no) from hd_cash_statement hcs
+        where DATE_FORMAT(account_date,'%Y-%m') = DATE_FORMAT(SYSDATE(),'%Y-%m')
+        and hcs.tenant_id = #{tenantId}
+    </select>
+
+    <select id="selectMaxNoByDate" resultType="java.lang.Integer">
+        select max(no) from hd_cash_statement hcs
+        where DATE_FORMAT(account_date,'%Y-%m') = DATE_FORMAT(#{accountDate},'%Y-%m')
+        and hcs.tenant_id = #{tenantId}
+    </select>
+
+    <select id="selectStatistics" resultMap="hdCashStatementMap">
+            SELECT u.unit_name unitName,u.id
+            sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') &lt; #{startTime} THEN b.INCOME-b.PAY ELSE 0 END)
+            beginBalance,
+            sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ >= ]]> #{startTime} AND
+            date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> #{endTime} THEN b.INCOME ELSE 0 END) currentIncome,
+            sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ >= ]]> #{startTime} AND
+            date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> #{endTime} THEN b.PAY ELSE 0 END) currentPay
+            from hd_cash_statement b
+            RIGHT JOIN hd_cash_unit u
+            ON b.unit_id = u.id
+            where u.tenant_id=#{tenantId}
+            GROUP BY u.unit_name
+            ORDER BY u.id
+    </select>
+
+
+
+    <select id="getComDetailList" resultType="com.hodo.gfbankaccount.entity.ComDetailStatistics">
+        SELECT date_format(a.SYNACCOUNT_DATE, '%Y-%m-%d') SYNACCOUNTDATE,
+        date_format(a.ACCOUNT_DATE, '%Y-%m-%d') ACCOUNTDATE,a.REMARK REMARK,a.INCOME INCOME,a.PAY PAY,
+        a.no,a.by2,hb.BANKCODE BANKCODE,hb.wbzh BANKACCOUNT,hb.BANK BANKNAME,date_format(ACCOUNT_DATE, '%Y%m%d%H%i') flag,
+        a.subjects subject from HD_BANK_ACCOUNT a
+        left join HD_NZ_DICT hb on a.ACCOUNT_ID=hb.id
+        where date_format(a.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{endTime}, '%Y-%m-%d')
+        and date_format(a.ACCOUNT_DATE, '%Y-%m-%d')>=date_format(#{startTime}, '%Y-%m-%d')
+        and a.COMPANY_NAME=#{companyId}
+        and a.TENANTID=#{tenantId} order by date_format(ACCOUNT_DATE, '%Y-%m-%d %H:%i:%s') asc,abs(by2) asc
+    </select>
+
+    <select id="getComReportBalance" resultType="java.lang.String">
+        select sum(CASE WHEN date_format(ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ < ]]> #{startTime} THEN INCOME-PAY ELSE 0 END) beginBalance from HD_BANK_ACCOUNT where TENANTID=#{tenantId}
+        and COMPANY_NAME=#{companyId}
+    </select>
+
+    <select id="getBankDetailList" resultType="com.hodo.gfbankaccount.entity.BankDetailStatistics">
+        SELECT date_format(SYNACCOUNT_DATE, '%Y-%m-%d') SYNACCOUNTDATE,date_format(ACCOUNT_DATE, '%Y-%m-%d') ACCOUNTDATE,a.REMARK REMARK,a.INCOME INCOME,a.PAY PAY,a.BALANCE,a.no,a.by2,
+        hc.COMPANY_NAME COMPANYNAME,hc.code COMPANYCODE,a.subjects subject from HD_BANK_ACCOUNT a
+        left join HD_COMPANY hc on a.COMPANY_NAME=hc.id
+        where date_format(a.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{endTime}, '%Y-%m-%d')
+        and date_format(a.ACCOUNT_DATE, '%Y-%m-%d')<![CDATA[ >= ]]>date_format(#{startTime}, '%Y-%m-%d')
+        and a.ACCOUNT_ID=#{accountId}
+        and a.TENANTID=#{tenantId} order by date_format(ACCOUNT_DATE, '%Y-%m-%d %H:%i:%s') asc,abs(by2) asc
+    </select>
+
+    <select id="getBankReportBalance" resultType="java.lang.String">
+        select sum(CASE WHEN date_format(ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ < ]]> #{startTime} THEN INCOME-PAY ELSE 0 END) beginBalance from HD_BANK_ACCOUNT where TENANTID=#{tenantId}
+        and ACCOUNT_ID=#{accountId}
+    </select>
+</mapper>

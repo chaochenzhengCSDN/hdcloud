@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.hodo.iiot.group2.data.hdcloud.bank.account.bill.mapper.gf.HdLoanAccountGfMapper">
+
+    <resultMap id="hdLoanAccountMap" type="com.hodo.iiot.group2.data.hdcloud.bank.account.bill.entity.HdLoanAccount">
+        <id property="id" column="id"/>
+        <result property="passedCredit" column="passed_credit"/>
+        <result property="usedCredit" column="used_credit"/>
+        <result property="useableCredit" column="useable_credit"/>
+        <result property="planCredit" column="plan_credit"/>
+        <result property="deadlineregion" column="deadlineregion"/>
+        <result property="loandate" column="loandate"/>
+        <result property="deaddate" column="deaddate"/>
+        <result property="money" column="money"/>
+        <result property="method" column="method"/>
+        <result property="rate" column="rate"/>
+        <result property="by1" column="by1"/>
+        <result property="by2" column="by2"/>
+        <result property="bankName" column="bank_name"/>
+        <result property="createTime" column="create_time"/>
+        <result property="createUserId" column="create_user_id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="createById" column="create_by_id"/>
+    </resultMap>
+
+    <select id="selectDistinctString" resultType="java.lang.String">
+            select distinct ${str} from hd_loan_account where ${param} = #{val} and tenant_id = #{tenantId}
+      </select>
+</mapper>

@@ -1,0 +1,751 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~
+  ~      Copyright (c) 2018-2025, hodo All rights reserved.
+  ~
+  ~  Redistribution and use in source and binary forms, with or without
+  ~  modification, are permitted provided that the following conditions are met:
+  ~
+  ~ Redistributions of source code must retain the above copyright notice,
+  ~  this list of conditions and the following disclaimer.
+  ~  Redistributions in binary form must reproduce the above copyright
+  ~  notice, this list of conditions and the following disclaimer in the
+  ~  documentation and/or other materials provided with the distribution.
+  ~  Neither the name of the pig4cloud.com developer nor the names of its
+  ~  contributors may be used to endorse or promote products derived from
+  ~  this software without specific prior written permission.
+  ~  Author: 江苏红豆工业互联网有限公司
+  ~
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.hodo.iiot.group2.data.hdcloud.bank.account.report.mapper.HdBankStatementTyMapper">
+
+    <resultMap id="hdBankStatementMap"
+               type="com.hodo.iiot.group2.data.hdcloud.bank.account.report.entity.HdBankStatementTy">
+        <id property="id" column="id"/>
+        <result property="accountDate" column="account_date"/>
+        <result property="no" column="no"/>
+        <result property="subjects" column="subjects"/>
+        <result property="remark" column="remark"/>
+        <result property="income" column="income"/>
+        <result property="pay" column="pay"/>
+        <result property="balance" column="balance"/>
+        <result property="companyId" column="company_id"/>
+        <result property="createName" column="create_name"/>
+        <result property="createBy" column="create_by"/>
+        <result property="rid" column="rid"/>
+        <result property="sheetid" column="sheetid"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="synaccountDate" column="synaccount_date"/>
+        <result property="accountType" column="account_type"/>
+        <result property="bankName" column="bank_name"/>
+        <result property="mysubjects" column="mysubjects"/>
+        <result property="sourceType" column="source_type"/>
+        <result property="sourceId" column="source_id"/>
+        <result property="bankAccountId" column="bank_account_id"/>
+        <result property="by2" column="by2"/>
+        <result property="companyMemberId" column="company_member_id"/>
+        <result property="by3" column="by3"/>
+        <result property="by4" column="by4"/>
+    </resultMap>
+
+    <sql id="addMoneyTerm">
+        <if test="moneyStart!=null and moneyEnd!=null">
+            and ((pay <![CDATA[ >= ]]> ${moneyStart} and pay <![CDATA[ <= ]]> ${moneyEnd})
+            or (income <![CDATA[ >= ]]> ${moneyStart} and income <![CDATA[ <= ]]> ${moneyEnd})
+            or (balance <![CDATA[ >= ]]> ${moneyStart} and balance <![CDATA[ <= ]]> ${moneyEnd}))
+        </if>
+        <if test="moneyStart!=null and moneyEnd==null">
+            and (pay <![CDATA[ >= ]]> ${moneyStart} or income <![CDATA[ >= ]]> ${moneyStart}
+            or balance <![CDATA[ >= ]]> ${moneyStart})
+        </if>
+        <if test="moneyStart==null and moneyEnd!=null">
+            and (pay <![CDATA[ <= ]]> ${moneyEnd} or income <![CDATA[ <= ]]> ${moneyEnd}
+            or balance <![CDATA[ <= ]]> ${moneyEnd})
+        </if>
+    </sql>
+
+    <select id="getAllAccountId" resultType="java.lang.String">
+           SELECT GROUP_CONCAT(id) FROM hd_bank_account
+      </select>
+
+    <select id="getBalance" resultType="java.lang.String">
+            SELECT sum(income-pay) from hd_bank_statement_ty haa
+        where haa.tenant_id=#{tenantId}
+        and haa.bank_account_id = #{bankAccountId}
+        and date_format(haa.account_date, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{accountDate}, '%Y-%m-%d')
+        and haa.by2 <![CDATA[ <= ]]> #{by2}
+      </select>
+
+    <select id="getAllBalance" resultType="java.util.HashMap">
+        SELECT sum(income-pay) balance,bank_account_id bankAccountId from hd_bank_statement_ty
+        where tenant_id=#{tenantId}
+        and bank_account_id IN
+        <foreach collection="accountList" item="account" index="index" open="(" close=")" separator=",">
+            #{account}
+        </foreach>
+        and date_format(account_date, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{accountDate}, '%Y-%m-%d')
+        and by2 <![CDATA[ <= ]]> #{by2}
+        GROUP BY bank_account_id
+    </select>
+
+    <select id="getBankStatementListBySql"
+            resultType="com.hodo.iiot.group2.data.hdcloud.bank.account.report.entity.HdBankStatementTy">
+        SELECT b.id,synaccount_date,bank_account_id,date_format(account_date, '%Y-%m-%d') account_date,`no`,
+        hc.external_bank_account_id bankAccount,hc.bank_name,b.by3,
+        subjects,remark,income,pay,source_type,company_member_id,b.company_id,hcm.company_name companyName,
+        account_type,hcm.name companyMemberName,hcm.code companyMemberCode,
+        (SELECT sum(INCOME-PAY) from hd_bank_statement_ty haa
+        INNER JOIN hd_bank_account hnd on haa.bank_account_id=hnd.id where 1=1
+        and haa.tenant_id=#{tenantId}
+        and haa.bank_account_id = b.bank_account_id
+        and (date_format(haa.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ < ]]> date_format(b.ACCOUNT_DATE, '%Y-%m-%d') or
+        (date_format(haa.ACCOUNT_DATE, '%Y-%m-%d')=date_format(b.ACCOUNT_DATE, '%Y-%m-%d') and haa.by2
+        <![CDATA[ <= ]]> b.by2))) balance
+        from hd_bank_statement_ty b
+        LEFT JOIN hd_bank_account hc on b.bank_account_id=hc.id
+        LEFT JOIN hd_company_member hcm on b.company_member_id = hcm.id
+        where b.tenant_id=#{tenantId}
+        <if test="startTime!=null and startTime!=''">
+            and date_format(b.account_date, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(#{startTime}, '%Y-%m-%d')
+        </if>
+        <if test="endTime!=null and endTime!=''">
+            and date_format(b.account_date, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{endTime}, '%Y-%m-%d')
+        </if>
+        <include refid="addMoneyTerm">
+            <property name="moneyStart" value="${moneyStart}"></property>
+            <property name="moneyEnd" value="${moneyEnd}"></property>
+        </include>
+        <if test="accountTypeList!=null and accountTypeList.size>0">
+            and b.account_type in
+            <foreach collection="accountTypeList" item="item" index="index" open="(" separator="," close=")">
+                (
+                #{item}
+                )
+            </foreach>
+        </if>
+        <if test="synStartTime!=null and synStartTime!=''">
+            and date_format(b.synaccount_date, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(#{synStartTime}, '%Y-%m-%d')
+        </if>
+        <if test="synEndTime!=null and synEndTime!=''">
+            and date_format(b.synaccount_date, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{synEndTime}, '%Y-%m-%d')
+        </if>
+        <if test="params!=null and params.size>0">
+            and
+            <foreach collection="params" index="key" item="value" separator="and">
+                replace(b.${key},'''','') like CONCAT('%',#{value},'%')
+            </foreach>
+        </if>
+        ORDER BY b.account_date desc,ABS(b.by2) desc limit ${page},${limit}
+    </select>
+
+    <select id="getSheetIds" resultType="java.lang.String">
+            SELECT DISTINCT sheetid from hd_bank_statement_ty where tenant_id = #{tenantId} and sheetid is not null
+            UNION
+            SELECT DISTINCT sheetid from hd_bank_pending where tenant_id = #{tenantId} and sheetid is not null
+      </select>
+
+    <select id="getRIds" resultType="java.lang.String">
+            SELECT DISTINCT rid from hd_bank_statement_ty where tenant_id = #{tenantId} and rid is not null
+            UNION
+            SELECT DISTINCT rid from hd_bank_pending where tenant_id = #{tenantId}  and rid is not null
+      </select>
+
+    <select id="selectMaxNo" resultType="java.math.BigDecimal">
+            select max(no) from hd_bank_statement_ty hbs
+            where DATE_FORMAT(account_date,'%Y-%m') = DATE_FORMAT(SYSDATE(),'%Y-%m')
+            and hbs.tenant_id = #{tenantId}
+      </select>
+
+    <select id="selectMaxNoByDate" resultType="java.math.BigDecimal">
+        select max(no) from hd_bank_statement_ty hbs
+        where DATE_FORMAT(account_date,'%Y-%m') = DATE_FORMAT(#{accountDate},'%Y-%m')
+        and hbs.tenant_id = #{tenantId}
+    </select>
+
+
+    <!--报表查询-->
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap id="TyBankStatistics" type="com.hodo.iiot.group2.data.hdcloud.bank.account.report.entity.TyBankStatistics">
+        <result property="bankName" column="bankName"></result>
+        <result property="companyName" column="companyName"></result>
+        <result property="memberUnitName" column="memberUnitName"></result>
+        <result property="beginBalance" column="beginBalance"></result>
+        <result property="currentIncome" column="currentIncome"></result>
+        <result property="currentPay" column="currentPay"></result>
+        <result property="endBalance" column="endBalance"></result>
+        <result property="nzIncome" column="nzIncome"></result>
+        <result property="nzPay" column="nzPay"></result>
+    </resultMap>
+
+
+    <select id="getBankList" resultType="com.hodo.iiot.group2.data.hdcloud.bank.account.report.entity.TyBankStatistics">
+        SELECT dict.bank_code bankCode,dict.bank_name bankName,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') &lt; #{startTime} THEN b.INCOME-b.PAY ELSE 0 END)
+        beginBalance,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ >= ]]> #{startTime} AND
+        date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> #{endTime} THEN b.INCOME ELSE 0 END) currentIncome,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ >= ]]> #{startTime} AND
+        date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> #{endTime} THEN b.PAY ELSE 0 END) currentPay,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ >= ]]> #{startTime} AND
+        date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> #{endTime} AND b.ACCOUNT_TYPE = '2' THEN b.INCOME ELSE 0
+        END) nzIncome,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ >= ]]> #{startTime} AND
+        date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> #{endTime} AND b.ACCOUNT_TYPE = '2' THEN b.PAY ELSE 0
+        END) nzPay
+        from hd_bank_statement_ty b
+        RIGHT JOIN hd_bank_account dict
+        ON b.bank_ACCOUNT_ID = dict.ID
+        where 1=1
+        <if test="bankAccountId!=null and bankAccountId!=''">
+            and dict.id = #{bankAccountId}
+        </if>
+
+        <if test="tenantId!=null and tenantId!=''">
+            and dict.tenant_id=#{tenantId}
+        </if>
+        GROUP BY dict.bank_code,dict.BANK_name
+        order by dict.bank_code DESC
+    </select>
+
+
+    <select id="getCompanyList"
+            resultType="com.hodo.iiot.group2.data.hdcloud.bank.account.report.entity.TyBankStatistics">
+        SELECT a.company_code superCompCode,a.company_name superCompName,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') &lt; #{startTime} THEN b.INCOME-b.PAY ELSE 0 END)
+        beginBalance,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ >= ]]> #{startTime} AND
+        date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> #{endTime} THEN b.INCOME ELSE 0 END) currentIncome,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ >= ]]> #{startTime} AND
+        date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> #{endTime} THEN b.PAY ELSE 0 END) currentPay,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ >= ]]> #{startTime} AND
+        date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> #{endTime} AND b.ACCOUNT_TYPE = '2' THEN b.INCOME ELSE 0
+        END) nzIncome,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ >= ]]> #{startTime} AND
+        date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> #{endTime} AND b.ACCOUNT_TYPE = '2' THEN b.PAY ELSE 0
+        END) nzPay
+        FROM hd_bank_statement_ty b
+        right JOIN hd_company_member a
+        on a.id=b.company_member_id
+        WHERE 1=1
+        <if test="companyId!=null and companyId!=''">
+            and a.company_id = #{companyId}
+        </if>
+        <if test="tenantId!=null and tenantId!=''">
+            and a.tenant_id=#{tenantId}
+        </if>
+        GROUP BY a.company_code,a.company_name
+        order by a.company_code DESC
+    </select>
+
+
+    <select id="getMemberUnitList"
+            resultType="com.hodo.iiot.group2.data.hdcloud.bank.account.report.entity.TyBankStatistics">
+        SELECT a.company_code superCompCode,a.company_name superCompName,a.code code,a.name `name`,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') &lt; #{startTime} THEN b.INCOME-b.PAY ELSE 0 END)
+        beginBalance,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ >= ]]> #{startTime} AND
+        date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> #{endTime} THEN b.INCOME ELSE 0 END) currentIncome,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ >= ]]> #{startTime} AND
+        date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> #{endTime} THEN b.PAY ELSE 0 END) currentPay,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ >= ]]> #{startTime} AND
+        date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> #{endTime} AND b.ACCOUNT_TYPE = '2' THEN b.INCOME ELSE 0
+        END) nzIncome,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ >= ]]> #{startTime} AND
+        date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> #{endTime} AND b.ACCOUNT_TYPE = '2' THEN b.PAY ELSE 0
+        END) nzPay
+        FROM hd_bank_statement_ty b
+        right JOIN hd_company_member a
+        ON b.COMPANY_MEMBER_id = a.ID
+        WHERE 1=1
+        <if test="companyMemberId!=null and companyMemberId!=''">
+            and b.COMPANY_MEMBER_id = #{companyMemberId}
+        </if>
+        <if test="companyId!=null and companyId!=''">
+            and a.company_id = #{companyId}
+        </if>
+
+        <if test="tenantId!=null and tenantId!=''">
+            and a.TENANT_ID=#{tenantId}
+        </if>
+        GROUP BY a.company_code,a.company_name,a.code,a.name
+        order by a.company_code DESC
+
+    </select>
+
+
+    <select id="getBankCompanyList"
+            resultType="com.hodo.iiot.group2.data.hdcloud.bank.account.report.entity.TyBankStatistics">
+        select dict.bank_code bankCode,dict.bank_name bankName,a.company_code superCompCode,
+        a.company_name superCompName,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') &lt; #{startTime} THEN b.INCOME-b.PAY ELSE 0 END)
+        beginBalance,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ >= ]]> #{startTime} AND
+        date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> #{endTime} THEN b.INCOME ELSE 0 END) currentIncome,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ >= ]]> #{startTime} AND
+        date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> #{endTime} THEN b.PAY ELSE 0 END) currentPay,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ >= ]]> #{startTime} AND
+        date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> #{endTime} AND b.ACCOUNT_TYPE = '2' THEN b.INCOME ELSE 0
+        END) nzIncome,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ >= ]]> #{startTime} AND
+        date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> #{endTime} AND b.ACCOUNT_TYPE = '2' THEN b.PAY ELSE 0
+        END) nzPay
+        FROM hd_bank_statement_ty b
+        INNER JOIN hd_bank_account dict ON b.bank_ACCOUNT_ID = dict.ID
+        INNER JOIN hd_company_member a on a.id=b.company_member_id
+        WHERE 1=1
+        <if test="bankAccountId!=null and bankAccountId!=''">
+            and dict.id = #{bankAccountId}
+        </if>
+        <if test="companyId!=null and companyId!=''">
+            and a.company_id = #{companyId}
+        </if>
+  
+        <if test="tenantId!=null and tenantId!=''">
+            and b.TENANT_ID=#{tenantId}
+        </if>
+        GROUP BY dict.bank_code, dict.BANK_name, a.company_code, a.company_name
+        order by dict.bank_code DESC
+
+    </select>
+
+
+    <select id="getBankMemberUnitList"
+            resultType="com.hodo.iiot.group2.data.hdcloud.bank.account.report.entity.TyBankStatistics">
+        select dict.bank_code bankCode,dict.bank_name bankName,a.company_code superCompCode,a.company_name
+        superCompName,a.code code,a.name `name`,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') &lt; #{startTime} THEN b.INCOME-b.PAY ELSE 0 END)
+        beginBalance,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ >= ]]> #{startTime} AND
+        date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> #{endTime} THEN b.INCOME ELSE 0 END) currentIncome,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ >= ]]> #{startTime} AND
+        date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> #{endTime} THEN b.PAY ELSE 0 END) currentPay,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ >= ]]> #{startTime} AND
+        date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> #{endTime} AND b.ACCOUNT_TYPE = '2' THEN b.INCOME ELSE 0
+        END) nzIncome,
+        sum(CASE WHEN date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ >= ]]> #{startTime} AND
+        date_format(b.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> #{endTime} AND b.ACCOUNT_TYPE = '2' THEN b.PAY ELSE 0
+        END) nzPay
+        FROM hd_bank_statement_ty b
+        INNER JOIN hd_bank_account dict
+        INNER JOIN hd_company_member a
+        ON b.bank_ACCOUNT_ID = dict.ID
+        and b.COMPANY_MEMBER_id = a.ID
+        WHERE 1=1
+        <if test="bankAccountId!=null and bankAccountId!=''">
+            AND dict.id = #{bankAccountId}
+        </if>
+        <if test="companyId!=null and companyId!=''">
+            AND a.company_id = #{companyId}
+        </if>
+        <if test="companyMemberId!=null and companyMemberId!=''">
+            AND b.COMPANY_MEMBER_id = #{companyMemberId}
+        </if>
+       
+        <if test="tenantId!=null and tenantId!=''">
+            and b.TENANT_ID=#{tenantId}
+        </if>
+        GROUP BY dict.bank_code,dict.bank_name,a.company_code,a.company_name,a.code,a.name
+        order by dict.bank_code DESC
+
+    </select>
+
+
+    <select id="getDetailCompanyList"
+            resultType="com.hodo.iiot.group2.data.hdcloud.bank.account.report.entity.TyComDetailStatistics">
+        SELECT SYNACCOUNTDATE,ACCOUNTDATE,REMARK,INCOME,PAY,BALANCE,no,BANKCODE,BANKACCOUNT,BANKNAME,flag,subject
+        from(
+        select *
+        from(SELECT date_format(a.SYNACCOUNT_DATE, '%Y-%m-%d') SYNACCOUNTDATE,date_format(a.ACCOUNT_DATE,
+        '%Y-%m-%d') ACCOUNTDATE,a.REMARK REMARK,a.INCOME INCOME,a.PAY PAY,
+        (SELECT sum(INCOME-PAY)
+        from hd_bank_statement_ty b where 1=1
+        <if test="companyMemberId!=null and companyMemberId!=''">
+            and b.COMPANY_MEMBER_id=a.COMPANY_MEMBER_id
+        </if>
+        and (date_format(b.ACCOUNT_DATE, '%Y-%m-%d %H:%i:%s') <![CDATA[ < ]]> date_format(a.ACCOUNT_DATE, '%Y-%m-%d
+        %H:%i:%s') or (date_format(b.ACCOUNT_DATE, '%Y-%m-%d %H:%i:%s')=date_format(a.ACCOUNT_DATE, '%Y-%m-%d %H:%i:%s')
+        and b.no
+        <![CDATA[ <= ]]> a.no)))BALANCE,a.no,hb.bank_code BANKCODE,hb.external_bank_account_id BANKACCOUNT,hb.BANK_name
+        BANKNAME,date_format(ACCOUNT_DATE, '%Y%m%d%H%i') flag,a.subjects subject
+        from hd_bank_statement_ty a
+        inner join hd_bank_account hb on a.bank_ACCOUNT_ID=hb.id
+        INNER JOIN hd_company_member ty ON a.COMPANY_MEMBER_id = ty.id
+        where date_format(a.ACCOUNT_DATE, '%Y-%m-%d')<![CDATA[ <= ]]>date_format(#{endTime}, '%Y-%m-%d')
+        and date_format(a.ACCOUNT_DATE, '%Y-%m-%d')<![CDATA[ >= ]]>date_format(#{startTime}, '%Y-%m-%d')
+
+        <if test="companyMemberId!=null and companyMemberId!=''">
+            and a.COMPANY_MEMBER_id=#{companyMemberId}
+        </if>
+        and a.TENANT_ID=#{tenantId} order by date_format(ACCOUNT_DATE, '%Y-%m-%d %H:%i:%s') asc,ABS(no) asc)z
+
+        union SELECT date_format(NULL, '%Y-%m-%d'),date_format(ACCOUNT_DATE, '%Y-%m-%d'),'本日合计' REMARK,
+         (SELECT sum(income) from hd_bank_statement_ty
+         inner join hd_bank_account hb on bank_ACCOUNT_ID=hb.id
+         INNER JOIN hd_company_member ty ON COMPANY_MEMBER_id = ty.id
+         where date_format(ACCOUNT_DATE, '%Y-%m-%d')=date_format(c.account_date, '%Y-%m-%d')
+         <if test="companyMemberId!=null and companyMemberId!=''">
+            and COMPANY_MEMBER_id=#{companyMemberId}
+         </if>
+         and hd_bank_statement_ty.TENANT_ID=#{tenantId}) INCOME,
+        (SELECT sum(pay) from hd_bank_statement_ty inner join hd_bank_account hb on bank_ACCOUNT_ID=hb.id INNER JOIN
+        hd_company_member ty ON COMPANY_MEMBER_id = ty.id where date_format(ACCOUNT_DATE,
+        '%Y-%m-%d')=date_format(c.account_date, '%Y-%m-%d')
+
+        <if test="companyMemberId!=null and companyMemberId!=''">
+            and COMPANY_MEMBER_id=#{companyMemberId}
+        </if>
+
+        and hd_bank_statement_ty.TENANT_ID=#{tenantId}) PAY,
+        null balance,NULL no,'' bankCode,'' bankAccount,'' bankName,CONCAT(date_format(ACCOUNT_DATE, '%Y%m%d'),'2357')
+        flag,''subject from hd_bank_statement_ty c inner join hd_bank_account hb on c.bank_ACCOUNT_ID=hb.id INNER JOIN
+        hd_company_member ty ON c.COMPANY_MEMBER_id = ty.id where date_format(c.ACCOUNT_DATE, '%Y-%m-%d')<![CDATA[ <= ]]>
+        date_format(#{endTime}, '%Y-%m-%d') and date_format(c.ACCOUNT_DATE, '%Y-%m-%d')<![CDATA[ >= ]]>
+        date_format(#{startTime}, '%Y-%m-%d')
+        <if test="companyMemberId!=null and companyMemberId!=''">
+            and c.COMPANY_MEMBER_id=#{companyMemberId}
+        </if>
+
+        and c.TENANT_ID=#{tenantId}
+
+        union
+        SELECT date_format(NULL, '%Y-%m'),date_format(ACCOUNT_DATE, '%Y-%m'),'本月合计' REMARK,(SELECT sum(income) from
+        hd_bank_statement_ty inner join hd_bank_account hb on bank_ACCOUNT_ID=hb.id INNER JOIN hd_company_member ty ON
+        COMPANY_MEMBER_id = ty.id where date_format(ACCOUNT_DATE, '%Y-%m')=date_format(d.account_date, '%Y-%m')
+
+        <if test="companyMemberId!=null and companyMemberId!=''">
+            and COMPANY_MEMBER_id=#{companyMemberId}
+        </if>
+
+        and hd_bank_statement_ty.TENANT_ID=#{tenantId})INCOME,
+        (SELECT sum(pay) from hd_bank_statement_ty inner join hd_bank_account hb on bank_ACCOUNT_ID=hb.id INNER JOIN
+        hd_company_member ty ON COMPANY_MEMBER_id = ty.id where date_format(ACCOUNT_DATE, '%Y-%m')=date_format(d.account_date,
+        '%Y-%m')
+
+        <if test="companyMemberId!=null and companyMemberId!=''">
+            and COMPANY_MEMBER_id=#{companyMemberId}
+        </if>
+
+        and hd_bank_statement_ty.TENANT_ID=#{tenantId}) PAY,
+        NULL balance,NULL no,'' bankCode,'' bankAccount,'' bankName,CONCAT(date_format(ACCOUNT_DATE, '%Y%m'),'312358')
+        flag,''subject from hd_bank_statement_ty d inner join hd_bank_account hb on d.bank_ACCOUNT_ID=hb.id INNER JOIN
+        hd_company_member ty ON d.COMPANY_MEMBER_id = ty.id where date_format(d.ACCOUNT_DATE, '%Y-%m-%d')<![CDATA[ <= ]]>
+        date_format(#{endTime}, '%Y-%m-%d') and date_format(d.ACCOUNT_DATE, '%Y-%m-%d')<![CDATA[ >= ]]>
+        date_format(#{startTime}, '%Y-%m-%d')
+        <if test="companyMemberId!=null and companyMemberId!=''">
+            and d.COMPANY_MEMBER_id=#{companyMemberId}
+        </if>
+
+  
+        and d.TENANT_ID=#{tenantId}
+
+        union
+        SELECT date_format(NULL, '%Y'),date_format(ACCOUNT_DATE, '%Y'),'本年累计' REMARK,(SELECT sum(income) from
+        hd_bank_statement_ty inner join hd_bank_account hb on bank_ACCOUNT_ID=hb.id INNER JOIN hd_company_member ty ON
+        COMPANY_MEMBER_id = ty.id where date_format(ACCOUNT_DATE, '%Y')=date_format(e.account_date, '%Y')
+
+        <if test="companyMemberId!=null and companyMemberId!=''">
+            and COMPANY_MEMBER_id=#{companyMemberId}
+        </if>
+        
+        and hd_bank_statement_ty.TENANT_ID=#{tenantId})INCOME,
+        (SELECT sum(pay) from hd_bank_statement_ty inner join hd_bank_account hb on bank_ACCOUNT_ID=hb.id INNER JOIN
+        hd_company_member ty ON COMPANY_MEMBER_id = ty.id where date_format(ACCOUNT_DATE, '%Y')=date_format(e.account_date,
+        '%Y')
+
+        <if test="companyMemberId!=null and companyMemberId!=''">
+            and COMPANY_MEMBER_id=#{companyMemberId}
+        </if>
+
+        and hd_bank_statement_ty.TENANT_ID=#{tenantId}) PAY,
+        NULL balance,NULL no,'' bankCode,'' bankAccount,'' bankName,CONCAT(date_format(ACCOUNT_DATE, '%Y'),'12312359')
+        flag,''subject from hd_bank_statement_ty e inner join hd_bank_account hb on e.bank_ACCOUNT_ID=hb.id INNER JOIN
+        hd_company_member ty ON e.COMPANY_MEMBER_id = ty.id
+        where date_format(e.ACCOUNT_DATE, '%Y-%m-%d')<![CDATA[ <= ]]>date_format(#{endTime}, '%Y-%m-%d') and
+        date_format(e.ACCOUNT_DATE, '%Y-%m-%d')<![CDATA[ >= ]]>date_format(#{startTime}, '%Y-%m-%d')
+        <if test="companyMemberId!=null and companyMemberId!=''">
+            and e.COMPANY_MEMBER_id=#{companyMemberId}
+        </if>
+
+        and e.TENANT_ID=#{tenantId})t ORDER BY t.flag asc
+
+    </select>
+
+
+    <select id="getDetailBankList"
+            resultType="com.hodo.iiot.group2.data.hdcloud.bank.account.report.entity.TyBankDetailStatistics">
+        SELECT
+        SYNACCOUNTDATE,ACCOUNTDATE,REMARK,INCOME,PAY,BALANCE,no,superCompName,superCompCode,flag,subject,code,name from(
+        select * from (SELECT date_format(a.SYNACCOUNT_DATE, '%Y-%m-%d') SYNACCOUNTDATE,date_format(a.ACCOUNT_DATE,
+        '%Y-%m-%d') ACCOUNTDATE,a.REMARK REMARK,a.INCOME INCOME,a.PAY PAY,
+        (SELECT sum(INCOME-PAY) from hd_bank_statement_ty b where 1=1
+        <if test="bankAccountId!=null and bankAccountId!=''">
+            and b.bank_ACCOUNT_ID=a.bank_ACCOUNT_ID
+        </if>
+        and (date_format(b.ACCOUNT_DATE, '%Y-%m-%d %H:%i:%s') <![CDATA[ < ]]> date_format(a.ACCOUNT_DATE, '%Y-%m-%d
+        %H:%i:%s') or (date_format(b.ACCOUNT_DATE, '%Y-%m-%d %H:%i:%s')=date_format(a.ACCOUNT_DATE, '%Y-%m-%d %H:%i:%s')
+        and ABS(b.by2)
+        <![CDATA[ <= ]]> ABS(a.by2))))BALANCE,a.no,a.by2,hc.company_name superCompName,hc.company_code
+        superCompCode,date_format(ACCOUNT_DATE, '%Y%m%d%H%i') flag,a.subjects subject,hc.code code,hc.name name from
+        hd_bank_statement_ty a inner join hd_company_member hc on a.COMPANY_MEMBER_id=hc.id
+        where date_format(a.ACCOUNT_DATE, '%Y-%m-%d')<![CDATA[ <= ]]>date_format(#{endTime}, '%Y-%m-%d') and
+        date_format(a.ACCOUNT_DATE, '%Y-%m-%d')<![CDATA[ >= ]]>date_format(#{startTime}, '%Y-%m-%d')
+
+        <if test="bankAccountId!=null and bankAccountId!=''">
+            and a.bank_ACCOUNT_ID=#{bankAccountId}
+        </if>
+
+        and a.TENANT_ID=#{tenantId} order by date_format(ACCOUNT_DATE, '%Y-%m-%d %H:%i:%s') asc,ABS(by2) asc)z
+
+
+        union SELECT date_format(NULL, '%Y-%m-%d'),date_format(ACCOUNT_DATE, '%Y-%m-%d'),'本日合计' REMARK,(SELECT
+        sum(income) from hd_bank_statement_ty inner join hd_company_member hc on COMPANY_MEMBER_id=hc.id where
+        date_format(ACCOUNT_DATE, '%Y-%m-%d')=date_format(c.account_date, '%Y-%m-%d')
+
+        <if test="bankAccountId!=null and bankAccountId!=''">
+            and bank_ACCOUNT_ID=c.bank_ACCOUNT_ID
+        </if>
+        <if test="bankAccountId!=null and bankAccountId!=''">
+            and bank_ACCOUNT_ID=#{bankAccountId}
+        </if>
+
+        and TENANT_ID=#{tenantId})INCOME,
+        (SELECT sum(pay) from hd_bank_statement_ty inner join hd_company_member hc on COMPANY_MEMBER_id=hc.id where
+        date_format(ACCOUNT_DATE, '%Y-%m-%d')=date_format(c.account_date, '%Y-%m-%d')
+
+        <if test="bankAccountId!=null and bankAccountId!=''">
+            and bank_ACCOUNT_ID=c.bank_ACCOUNT_ID
+        </if>
+        <if test="bankAccountId!=null and bankAccountId!=''">
+            and bank_ACCOUNT_ID=#{bankAccountId}
+        </if>
+
+        and TENANT_ID=#{tenantId}) PAY,
+        null balance,NULL no,null by2,'' superCompCode,''superCompName,CONCAT(date_format(ACCOUNT_DATE,
+        '%Y%m%d'),'2357') flag,''subject, ''code,''name from hd_bank_statement_ty c inner join hd_company_member hc on
+        c.COMPANY_MEMBER_id=hc.id where date_format(c.ACCOUNT_DATE, '%Y-%m-%d')<![CDATA[ <= ]]>date_format(#{endTime},
+        '%Y-%m-%d') and date_format(c.ACCOUNT_DATE, '%Y-%m-%d')<![CDATA[ >= ]]>date_format(#{startTime}, '%Y-%m-%d')
+
+        <if test="bankAccountId!=null and bankAccountId!=''">
+            and c.bank_ACCOUNT_ID=#{bankAccountId}
+        </if>
+
+        and TENANT_ID=#{tenantId}
+
+
+        union
+        SELECT date_format(NULL, '%Y-%m'),date_format(ACCOUNT_DATE, '%Y-%m'),'本月合计' REMARK,(SELECT sum(income) from
+        hd_bank_statement_ty inner join hd_company_member hc on COMPANY_MEMBER_id=hc.id where date_format(ACCOUNT_DATE,
+        '%Y-%m')=date_format(d.account_date, '%Y-%m')
+
+        <if test="bankAccountId!=null and bankAccountId!=''">
+            and bank_ACCOUNT_ID=d.bank_ACCOUNT_ID
+        </if>
+        <if test="bankAccountId!=null and bankAccountId!=''">
+            and bank_ACCOUNT_ID=#{bankAccountId}
+        </if>
+
+        and TENANT_ID=#{tenantId})INCOME,
+        (SELECT sum(pay) from hd_bank_statement_ty inner join hd_company_member hc on COMPANY_MEMBER_id=hc.id where
+        date_format(ACCOUNT_DATE, '%Y-%m')=date_format(d.account_date, '%Y-%m')
+
+        <if test="bankAccountId!=null and bankAccountId!=''">
+            and bank_ACCOUNT_ID=d.bank_ACCOUNT_ID
+        </if>
+        <if test="bankAccountId!=null and bankAccountId!=''">
+            and bank_ACCOUNT_ID=#{bankAccountId}
+        </if>
+
+        and TENANT_ID=#{tenantId}) PAY,
+        NULL balance,NULL no,null by2,'' superCompCode,''superCompName,CONCAT(date_format(ACCOUNT_DATE,
+        '%Y%m'),'312358') flag,''subject, ''code,''name from hd_bank_statement_ty d inner join hd_company_member hc on
+        d.COMPANY_MEMBER_id=hc.id where date_format(d.ACCOUNT_DATE, '%Y-%m-%d')<![CDATA[ <= ]]>date_format(#{endTime},
+        '%Y-%m-%d') and date_format(d.ACCOUNT_DATE, '%Y-%m-%d')<![CDATA[ >= ]]>date_format(#{startTime}, '%Y-%m-%d')
+
+        <if test="bankAccountId!=null and bankAccountId!=''">
+            and d.bank_ACCOUNT_ID=#{bankAccountId}
+        </if>
+
+        and TENANT_ID=#{tenantId}
+
+        union
+        SELECT date_format(NULL, '%Y'),date_format(ACCOUNT_DATE, '%Y'),'本年累计' REMARK,(SELECT sum(income) from
+        hd_bank_statement_ty inner join hd_company_member hc on COMPANY_MEMBER_id=hc.id where date_format(ACCOUNT_DATE,
+        '%Y')=date_format(e.account_date, '%Y')
+
+        <if test="bankAccountId!=null and bankAccountId!=''">
+            and bank_ACCOUNT_ID=e.bank_ACCOUNT_ID
+        </if>
+        <if test="bankAccountId!=null and bankAccountId!=''">
+            and bank_ACCOUNT_ID=#{bankAccountId}
+        </if>
+
+        and TENANT_ID=#{tenantId})INCOME,
+        (SELECT sum(pay) from hd_bank_statement_ty inner join hd_company_member hc on COMPANY_MEMBER_id=hc.id where
+        date_format(ACCOUNT_DATE, '%Y')=date_format(e.account_date, '%Y')
+
+        <if test="bankAccountId!=null and bankAccountId!=''">
+            and bank_ACCOUNT_ID=e.bank_ACCOUNT_ID
+        </if>
+        <if test="bankAccountId!=null and bankAccountId!=''">
+            and bank_ACCOUNT_ID=#{bankAccountId}
+        </if>
+
+        and TENANT_ID=#{tenantId}) PAY,
+        NULL balance,NULL no,null by2,'' superCompCode,''superCompCode,CONCAT(date_format(ACCOUNT_DATE,
+        '%Y'),'12312359') flag,''subject, ''code,''name
+        from hd_bank_statement_ty e
+        inner join hd_company_member hc on
+        e.COMPANY_MEMBER_id=hc.id
+        where date_format(e.ACCOUNT_DATE, '%Y-%m-%d')<![CDATA[ <= ]]>date_format(#{endTime}, '%Y-%m-%d') and
+        date_format(e.ACCOUNT_DATE, '%Y-%m-%d')<![CDATA[ >= ]]>date_format(#{startTime}, '%Y-%m-%d')
+
+        <if test="bankAccountId!=null and bankAccountId!=''">
+            and e.bank_ACCOUNT_ID=#{bankAccountId}
+        </if>
+
+        and TENANT_ID=#{tenantId})t ORDER BY t.flag asc
+
+    </select>
+
+
+    <!--获取银行明细计算-->
+    <select id="getBankReportBalance" resultType="java.lang.String">
+        select sum(CASE WHEN date_format(ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ < ]]> #{startTime} THEN INCOME-PAY ELSE 0 END) beginBalance
+        from hd_bank_statement_ty
+        where TENANT_ID=#{tenantId}
+        and bank_ACCOUNT_ID=#{bankAccountId}
+    </select>
+
+    <select id="getBankDetailList"
+            resultType="com.hodo.iiot.group2.data.hdcloud.bank.account.report.entity.TyBankDetailStatistics">
+        SELECT date_format(SYNACCOUNT_DATE, '%Y-%m-%d') SYNACCOUNTDATE,date_format(ACCOUNT_DATE, '%Y-%m-%d') ACCOUNTDATE,
+        a.REMARK REMARK,a.INCOME INCOME,a.PAY PAY,a.BALANCE,a.no,a.by2,
+        hc.company_name superCompName,hc.company_code superCompCode,a.subjects subject,hc.code code,hc.name `name`
+        from hd_bank_statement_ty a
+        left join  hd_company_member hc on a.COMPANY_MEMBER_id=hc.id
+        where date_format(a.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{endTime}, '%Y-%m-%d')
+        and date_format(a.ACCOUNT_DATE, '%Y-%m-%d')<![CDATA[ >= ]]>date_format(#{startTime}, '%Y-%m-%d')
+        and a.bank_ACCOUNT_ID=#{bankAccountId}
+        and a.TENANT_ID=#{tenantId}
+        order by date_format(ACCOUNT_DATE, '%Y-%m-%d %H:%i:%s') asc,abs(by2) asc
+    </select>
+
+    <!--获取公司明细计算-->
+    <select id="getComReportBalance" resultType="java.lang.String">
+        select sum(CASE WHEN date_format(ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ < ]]> #{startTime} THEN INCOME-PAY ELSE 0 END) beginBalance
+        from hd_bank_statement_ty
+        where TENANT_ID=#{tenantId}
+        and COMPANY_MEMBER_id=#{companyId}
+    </select>
+
+    <select id="getComDetailList"
+            resultType="com.hodo.iiot.group2.data.hdcloud.bank.account.report.entity.TyComDetailStatistics">
+        SELECT date_format(a.SYNACCOUNT_DATE, '%Y-%m-%d') SYNACCOUNTDATE,
+        date_format(a.ACCOUNT_DATE, '%Y-%m-%d') ACCOUNTDATE,a.REMARK REMARK,a.INCOME INCOME,a.PAY PAY,
+        a.no,a.by2,hb.bank_code BANKCODE,hb.external_bank_account_id BANKACCOUNT,hb.BANK_name BANKNAME,date_format(ACCOUNT_DATE, '%Y%m%d%H%i') flag,
+        a.subjects subject
+        from hd_bank_statement_ty a
+        left join hd_bank_account hb on a.bank_ACCOUNT_ID=hb.id
+        INNER JOIN hd_company_member ty ON a.COMPANY_MEMBER_id = ty.id
+        where date_format(a.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{endTime}, '%Y-%m-%d')
+        and date_format(a.ACCOUNT_DATE, '%Y-%m-%d')>=date_format(#{startTime}, '%Y-%m-%d')
+        and a.COMPANY_MEMBER_id=#{companyId}
+        and a.TENANT_ID=#{tenantId} order by date_format(ACCOUNT_DATE, '%Y-%m-%d %H:%i:%s') asc,abs(by2) asc
+    </select>
+
+
+    <select id="getAllBankAccountBySql" resultMap="hdBankStatementMap">
+        SELECT b.id,synaccount_date,bank_account_id,account_date,`no`,hc.external_bank_account_id bankAccount,
+        hc.bank_name,subjects,remark,income,pay,source_type,company_member_id,
+        b.company_id,hcm.company_name companyName,balance,hcm.name companyMemberName,hcm.code companyMemberCode
+        ,(CASE WHEN account_type='0' THEN '九恒星账单'
+        WHEN account_type='1' THEN '九恒星账单'
+        WHEN account_type='2'THEN '内部账单'
+        WHEN account_type='3'THEN '手工账单'
+        ELSE '' END ) account_type
+        from hd_bank_statement_ty b
+        LEFT JOIN hd_bank_account hc on b.bank_account_id=hc.id
+        LEFT JOIN hd_company_member hcm on b.company_member_id = hcm.id
+        where b.tenant_id=#{tenantId}
+        <if test="startTime!=null and startTime!=''">
+            and date_format(b.account_date, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(#{startTime}, '%Y-%m-%d')
+        </if>
+        <if test="endTime!=null and endTime!=''">
+            and date_format(b.account_date, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{endTime}, '%Y-%m-%d')
+        </if>
+        <include refid="addMoneyTerm">
+            <property name="moneyStart" value="${moneyStart}"></property>
+            <property name="moneyEnd" value="${moneyEnd}"></property>
+        </include>
+
+        <if test="accountTypeList!=null and accountTypeList.size>0">
+            and b.account_type in
+            <foreach collection="accountTypeList" item="item" index="index" open="(" separator="," close=")">
+                (
+                #{item}
+                )
+            </foreach>
+        </if>
+        <if test="synStartTime!=null and synStartTime!=''">
+            and date_format(b.synaccount_date, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(#{synStartTime}, '%Y-%m-%d')
+        </if>
+        <if test="synEndTime!=null and synEndTime!=''">
+            and date_format(b.synaccount_date, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{synEndTime}, '%Y-%m-%d')
+        </if>
+        <if test="params!=null and params.size>0">
+            and
+            <foreach collection="params" index="key" item="value" separator="and">
+                replace(b.${key},'''','') like CONCAT('%',#{value},'%')
+            </foreach>
+        </if>
+        ORDER BY date_format(b.account_date, '%Y-%m-%d') desc,ABS(b.by2) desc
+    </select>
+
+    <resultMap id="otherValMap" type="java.util.Map">
+        <result property="income" column="income"></result>
+        <result property="pay" column="pay"></result>
+        <result property="total" column="total"></result>
+    </resultMap>
+
+    <select id="getOtherVal" resultMap="otherValMap">
+        SELECT sum(pay)pay,sum(income)income,count(*)total
+        from hd_bank_statement_ty b
+        LEFT JOIN hd_bank_account hc on b.bank_account_id=hc.id
+        where 1=1 and b.tenant_id=#{tenantId}
+        <if test="startTime!=null and startTime!=''">
+            and date_format(b.account_date, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(#{startTime}, '%Y-%m-%d')
+        </if>
+        <if test="endTime!=null and endTime!=''">
+            and date_format(b.account_date, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{endTime}, '%Y-%m-%d')
+        </if>
+        <include refid="addMoneyTerm">
+            <property name="moneyStart" value="${moneyStart}"></property>
+            <property name="moneyEnd" value="${moneyEnd}"></property>
+        </include>
+        <if test="accountTypeList!=null and accountTypeList.size>0">
+            and b.account_type in
+            <foreach collection="accountTypeList" item="item" index="index" open="(" separator="," close=")">
+                (
+                #{item}
+                )
+            </foreach>
+        </if>
+        <if test="synStartTime!=null and synStartTime!=''">
+            and date_format(b.synaccount_date, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(#{synStartTime}, '%Y-%m-%d')
+        </if>
+        <if test="synEndTime!=null and synEndTime!=''">
+            and date_format(b.synaccount_date, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{synEndTime}, '%Y-%m-%d')
+        </if>
+        <if test="params!=null and params.size>0">
+            and
+            <foreach collection="params" index="key" item="value" separator="and">
+                replace(b.${key},'''','') like CONCAT('%',#{value},'%')
+            </foreach>
+        </if>
+    </select>
+</mapper>

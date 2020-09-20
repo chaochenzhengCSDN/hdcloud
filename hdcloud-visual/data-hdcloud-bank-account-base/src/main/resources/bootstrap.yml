@@ -1,0 +1,23 @@
+server:
+  port: 19889
+
+spring:
+  application:
+    name: data-hdcloud-bank-account-base
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS-HOST:172.22.0.195}:${NACOS-PORT:8848}
+        ip: 10.10.64.19
+        port: 32008
+      config:
+        server-addr: ${spring.cloud.nacos.discovery.server-addr}
+        file-extension: yml
+        shared-dataids: application-${spring.profiles.active}.${spring.cloud.nacos.config.file-extension}
+  profiles:
+    active: dev
+
+logging:
+    level:
+        tk.mybatis: error
+        com.hodo: error

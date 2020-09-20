@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~
+  ~      Copyright (c) 2018-2025, hodo All rights reserved.
+  ~
+  ~  Redistribution and use in source and binary forms, with or without
+  ~  modification, are permitted provided that the following conditions are met:
+  ~
+  ~ Redistributions of source code must retain the above copyright notice,
+  ~  this list of conditions and the following disclaimer.
+  ~  Redistributions in binary form must reproduce the above copyright
+  ~  notice, this list of conditions and the following disclaimer in the
+  ~  documentation and/or other materials provided with the distribution.
+  ~  Neither the name of the pig4cloud.com developer nor the names of its
+  ~  contributors may be used to endorse or promote products derived from
+  ~  this software without specific prior written permission.
+  ~  Author: 江苏红豆工业互联网有限公司
+  ~
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.hodo.iiot.group2.data.hdcloud.bank.account.base.mapper.HdMatchCompanyMapper">
+
+    <resultMap id="hdMatchCompanyMap" type="com.hodo.iiot.group2.data.hdcloud.bank.account.base.entity.HdMatchCompany">
+        <id property="id" column="id"/>
+        <result property="customerName" column="customer_name"/>
+        <result property="companyCode" column="company_code"/>
+        <result property="companyName" column="company_name"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="createTime" column="create_time"/>
+        <result property="createBy" column="create_by"/>
+        <result property="companyId" column="company_id"/>
+        <result property="createById" column="create_by_id"/>
+    </resultMap>
+
+    <select id="selectDistinctString" resultType="java.lang.String">
+        select distinct ${str} from hd_match_company where ${param} = #{val} and tenant_id = #{tenantId}
+    </select>
+
+    <select id="getHdTymatchCompanyList" resultMap="hdMatchCompanyMap">
+        SELECT htc.*,ht.name companyName,ht.code companyCode
+        FROM hd_match_company htc
+        left JOIN hd_company ht ON htc.company_id = ht.id AND ht.tenant_id = htc.tenant_id
+        where htc.tenant_id = #{tenantId}
+        <if test="companyId!=null and companyId!=''">
+            and ht.id = #{companyId}
+        </if>
+
+        <if test="params!=null and params.size>0">
+            and
+            <foreach collection="params" index="key" item="value" separator="and">
+                replace(htc.${key},'''','') like
+                <choose>
+                    <when test="value != null and value !=''">
+                        CONCAT('%',#{value},'%')
+                    </when>
+                    <otherwise>
+                        CONCAT('%','','%')
+                    </otherwise>
+                </choose>
+            </foreach>
+        </if>
+        ORDER BY create_time DESC
+        limit ${page},${limit}
+    </select>
+    <select id="getAllTymatchCompany" resultMap="hdMatchCompanyMap">
+        SELECT htc.*,ht.name companyName,ht.code companyCode
+        FROM hd_match_company htc
+        left JOIN hd_company ht ON htc.company_id = ht.id AND ht.tenant_id = htc.tenant_id
+        where htc.tenant_id = #{tenantId}
+        <if test="companyId!=null and companyId!=''">
+            and ht.id = #{companyId}
+        </if>
+        <if test="params!=null and params.size>0">
+            and
+            <foreach collection="params" index="key" item="value" separator="and">
+                replace(htc.${key},'''','') like
+                <choose>
+                    <when test="value != null and value !=''">
+                        CONCAT('%',#{value},'%')
+                    </when>
+                    <otherwise>
+                        CONCAT('%','','%')
+                    </otherwise>
+                </choose>
+
+            </foreach>
+        </if>
+        ORDER BY htc.create_time DESC
+    </select>
+
+    <select id="otherVal" resultType="java.lang.String">
+        SELECT count(*)
+        FROM hd_match_company htc
+        left JOIN hd_company ht ON htc.company_id = ht.id AND ht.tenant_id = htc.tenant_id
+        where htc.tenant_id = #{tenantId}
+        <if test="companyId!=null and companyId!=''">
+            and ht.id = #{companyId}
+        </if>
+        <if test="params!=null and params.size>0">
+            and
+            <foreach collection="params" index="key" item="value" separator="and">
+                replace(htc.${key},'''','') like
+                <choose>
+                    <when test="value != null and value !=''">
+                        CONCAT('%',#{value},'%')
+                    </when>
+                    <otherwise>
+                        CONCAT('%','','%')
+                    </otherwise>
+                </choose>
+
+            </foreach>
+        </if>
+        ORDER BY htc.create_time DESC
+    </select>
+
+</mapper>

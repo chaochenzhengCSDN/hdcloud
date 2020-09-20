@@ -1,0 +1,150 @@
+# 使用说明 V3.2.0
+# 1. 使用docker-compose  宿主机不需要配置host来发现
+# 2. 无需修改源码，根目录  docker-compose up 即可
+# 3. 静静等待服务启动
+
+version: '2'
+services:
+  hdcloud-mysql:
+    build:
+      context: ./
+      dockerfile: ./db/Dockerfile
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    restart: always
+    container_name: hdcloud-mysql
+    image: hdcloud-mysql
+    ports:
+      - 3306:3306
+    volumes:
+      - ./hdcloud-mysql:/var/lib/mysql
+    command: --lower_case_table_names=1
+
+  hdcloud-zookeeper:
+    image: zookeeper:3.4.13
+    restart: always
+
+  hdcloud-redis:
+    image: redis:5.0.4
+    restart: always
+    container_name: hdcloud-redis
+    ports:
+      - 6379:6379
+
+  hdcloud-minio:
+    image: minio/minio
+    command: server /data
+    ports:
+      - 9000:9000
+    volumes:
+      - ./data:/data
+      - ./config:/root/.minio
+    environment:
+      - MINIO_DOMAIN=hdcloud-minio
+      - MINIO_ACCESS_KEY=hodo
+      - MINIO_SECRET_KEY=hodo
+
+  hdcloud-register:
+    build:
+      context: ./
+      dockerfile: ./hdcloud-register/Dockerfile
+    restart: always
+    container_name: hdcloud-register
+    image: hdcloud-register
+    ports:
+      - 8848:8848
+
+  hdcloud-gateway:
+    build:
+      context: ./
+      dockerfile: ./hdcloud-gateway/Dockerfile
+    restart: always
+    container_name: hdcloud-gateway
+    image: hdcloud-gateway
+    ports:
+      - 9999:9999
+
+  hdcloud-auth:
+    build:
+      context: ./
+      dockerfile: ./hdcloud-auth/Dockerfile
+    restart: always
+    container_name: hdcloud-auth
+    image: hdcloud-auth
+
+  hdcloud-upms:
+    build:
+      context: ./
+      dockerfile: ./hdcloud-upms/hdcloud-upms-biz/Dockerfile
+    restart: always
+    container_name: hdcloud-upms
+    image: hdcloud-upms
+
+  hdcloud-monitor:
+    build:
+      context: ./
+      dockerfile: ./hdcloud-visual/hdcloud-monitor/Dockerfile
+    restart: always
+    image: hdcloud-monitor
+    container_name: hdcloud-monitor
+    ports:
+      - 5001:5001
+
+  hdcloud-daemon-quartz:
+    build:
+      context: ./
+      dockerfile: ./hdcloud-visual/hdcloud-daemon-quartz/Dockerfile
+    restart: always
+    image: hdcloud-daemon-quartz
+    container_name: hdcloud-daemon-quartz
+
+  hdcloud-daemon-elastic-job:
+    build:
+      context: ./
+      dockerfile: ./hdcloud-visual/hdcloud-daemon-elastic-job/Dockerfile
+    restart: always
+    image: hdcloud-daemon-elastic-job
+    container_name: hdcloud-daemon-elastic-job
+
+  hdcloud-codegen:
+    build:
+      context: ./
+      dockerfile: ./hdcloud-visual/hdcloud-codegen/Dockerfile
+    restart: always
+    image: hdcloud-codegen
+    container_name: hdcloud-codegen
+
+  hdcloud-mp-manager:
+    build:
+      context: ./
+      dockerfile: ./hdcloud-visual/hdcloud-mp-manager/Dockerfile
+    restart: always
+    image: hdcloud-mp-manager
+    container_name: hdcloud-mp-manager
+
+  hdcloud-pay:
+    build:
+      context: ./
+      dockerfile: ./hdcloud-visual/hdcloud-pay/Dockerfile
+    restart: always
+    image: hdcloud-pay
+    container_name: hdcloud-pay
+
+  hdcloud-activiti:
+    build:
+      context: ./
+      dockerfile: ./hdcloud-visual/hdcloud-activiti/Dockerfile
+    restart: always
+    image: hdcloud-activiti
+    container_name: hdcloud-activiti
+
+  hdcloud-tx-manager:
+    build:
+      context: ./
+      dockerfile: ./hdcloud-visual/hdcloud-tx-manager/Dockerfile
+    restart: always
+    image: hdcloud-tx-manager
+    container_name: hdcloud-tx-manager
+    ports:
+      - 5004:5004
+      - 9998:9998

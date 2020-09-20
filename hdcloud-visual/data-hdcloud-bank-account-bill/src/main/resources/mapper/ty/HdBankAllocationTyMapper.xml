@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.hodo.iiot.group2.data.hdcloud.bank.account.bill.mapper.ty.HdBankAllocationTyMapper">
+
+    <resultMap id="hdBankAllocationMap"
+               type="com.hodo.iiot.group2.data.hdcloud.bank.account.bill.entity.HdBankAllocation">
+        <id property="id" column="id"/>
+        <result property="bankNameFrom" column="bank_name_from"/>
+        <result property="bankNameTo" column="bank_name_to"/>
+        <result property="bankAccountFrom" column="bank_account_from"/>
+        <result property="bankAccountTo" column="bank_account_to"/>
+        <result property="drawee" column="drawee"/>
+        <result property="payee" column="payee"/>
+        <result property="allocationDate" column="allocation_date"/>
+        <result property="money" column="money"/>
+        <result property="moneyPurpose" column="money_purpose"/>
+        <result property="deleteFlag" column="delete_flag"/>
+        <result property="crtUserId" column="crt_user_id"/>
+        <result property="crtUserName" column="crt_user_name"/>
+        <result property="crtTime" column="crt_time"/>
+        <result property="updUserId" column="upd_user_id"/>
+        <result property="updUserName" column="upd_user_name"/>
+        <result property="updTime" column="upd_time"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="number" column="number"/>
+        <result property="bankAccountIdFrom" column="bank_account_id_from"/>
+        <result property="bankAccountIdTo" column="bank_account_id_to"/>
+        <result property="createById" column="create_by_id"/>
+    </resultMap>
+
+    <select id="selectDistinctString" resultType="java.lang.String">
+        select distinct ${str} from hd_bank_allocation where ${param} = #{val} and tenant_id = #{tenantId}
+    </select>
+
+
+</mapper>

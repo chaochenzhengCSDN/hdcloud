@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>hdcloud-visual</artifactId>
+        <groupId>com.hodo</groupId>
+        <version>V2.0.1</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>data-hdcloud-cash-account-bill</artifactId>
+
+    <description>现金记账账单模块</description>
+
+    <dependencies>
+        <!--必备: spring boot web-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <!--必备: 注册中心客户端-->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+            <version>${spring-cloud-alibaba.version}</version>
+        </dependency>
+        <!--必备: 配置中心客户端-->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+            <version>${spring-cloud-alibaba.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.hodo</groupId>
+            <artifactId>hdcloud-common-core</artifactId>
+            <version>V2.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.hodo</groupId>
+            <artifactId>hdcloud-common-datasource</artifactId>
+            <version>V2.0.1</version>
+        </dependency>
+        <!--必备: 操作数据源相关-->
+        <dependency>
+            <groupId>com.hodo</groupId>
+            <artifactId>hdcloud-common-data</artifactId>
+            <version>V2.0.1</version>
+        </dependency>
+        <!--必备：pigx安全模块-->
+        <dependency>
+            <groupId>com.hodo</groupId>
+            <artifactId>hdcloud-common-security</artifactId>
+            <version>V2.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.hodo</groupId>
+            <artifactId>hdcloud-common-log</artifactId>
+            <version>V2.0.1</version>
+        </dependency>
+
+        <!--测试: spring boot test-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+        </dependency>
+        <!--server-api-->
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+        </dependency>
+        <!--undertow容器-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-undertow</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-dbcp</groupId>
+            <artifactId>commons-dbcp</artifactId>
+            <version>1.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.oracle</groupId>
+            <artifactId>ojdbc6</artifactId>
+            <version>11.2.0.3</version>
+        </dependency>
+    </dependencies>
+
+
+
+
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

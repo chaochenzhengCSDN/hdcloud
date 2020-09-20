@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.hodo.iiot.group2.data.hdcloud.bank.account.bill.mapper.ty.HdTransferBankStatementTyMapper">
+
+    <resultMap id="hdTransferBankStatementMap"
+               type="com.hodo.iiot.group2.data.hdcloud.bank.account.bill.entity.HdTransferBankStatement">
+        <id property="id" column="id"/>
+        <result property="no" column="no"/>
+        <result property="incomeSubjectId" column="income_subject_id"/>
+        <result property="remark" column="remark"/>
+        <result property="money" column="money"/>
+        <result property="paySubjectId" column="pay_subject_id"/>
+        <result property="createTime" column="create_time"/>
+        <result property="crtUserId" column="crt_user_id"/>
+        <result property="streamNo" column="stream_no"/>
+        <result property="billNo" column="bill_no"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="bankAccountId" column="bank_account_id"/>
+        <result property="by1" column="by1"/>
+        <result property="by2" column="by2"/>
+        <result property="bankName" column="bank_name"/>
+        <result property="memberIncomeSubjectId" column="member_income_subject_id"/>
+        <result property="memberPaySubjectId" column="member_pay_subject"/>
+        <result property="createById" column="create_by_id"/>
+    </resultMap>
+
+    <select id="selectDistinctString" resultType="java.lang.String">
+            select distinct ${str} from hd_transfer_bank_statement where ${param} = #{val} and tenant_id = #{tenantId}
+      </select>
+
+
+    <sql id="addMoneyTerm">
+        <if test="moneyStart!=null and moneyStart!=''">
+            and hna.MONEY <![CDATA[ >= ]]> ${moneyStart}
+        </if>
+        <if test="moneyEnd!=null and moneyEnd!=''">
+            and hna.MONEY <![CDATA[ <= ]]> ${moneyEnd}
+        </if>
+    </sql>
+
+
+    <select id="getNzbankAccountList" resultMap="hdTransferBankStatementMap">
+        SELECT hna.id,hna.no,hca.name as memberIncomeSubjectName,hca.company_name as incomeSubjectName, hna.remark,
+        hna.money,hcb.name as memberPaySubjectName,hcb.company_name as paySubjectName,hca.code as
+        memberIncomesubjectCode,
+        hcb.code as memberPaysubjectCode,hna.create_time,hna.stream_no,hna.bill_no,hna.tenant_id,
+        hnd.bank_name as bank_name,hnd.external_bank_account_id as bankAccountCode,hna.bank_account_id,
+        hna.income_subject_id,hna.pay_subject_id,hna.member_income_subject_id,hna.pay_subject_id,
+        hnd.bank_code bankCode
+        from hd_transfer_bank_statement hna
+        INNER JOIN hd_company_member hca on hna.member_income_subject_id=hca.id
+        INNER JOIN hd_company_member hcb on hna.member_pay_subject_id=hcb.id
+        INNER JOIN hd_bank_account hnd on hna.bank_account_id=hnd.id where 1=1
+        <if test="startTime!=null and startTime!=''">
+            and date_format(hna.create_time, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(#{startTime}, '%Y-%m-%d')
+        </if>
+        <if test="endTime!=null and endTime!=''">
+            and date_format(hna.create_time, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{endTime}, '%Y-%m-%d')
+        </if>
+        <include refid="addMoneyTerm">
+            <property name="moneyStart" value="${moneyStart}"></property>
+            <property name="moneyEnd" value="${moneyEnd}"></property>
+        </include>
+        <if test="tenantId!=null and tenantId!=''">
+            and hna.tenant_id = #{tenantId}
+        </if>
+        <if test="paysubjectName!=null and paysubjectName!=''">
+            and hcb.company_name like CONCAT('%',#{paysubjectName},'%')
+        </if>
+        <if test="incomesubjectName!=null and incomesubjectName!=''">
+            and hca.company_name like CONCAT('%',#{incomesubjectName},'%')
+        </if>
+        <if test="params!=null and params.size>0">
+            and
+            <foreach collection="params" index="key" item="value" separator="and">
+                replace(hna.${key},'''','') like CONCAT('%',#{value},'%')
+            </foreach>
+        </if>
+        order by hna.create_time desc,hna.no desc
+        limit ${page},${limit}
+    </select>
+
+    <select id="getNzbankAccountListEx" resultMap="hdTransferBankStatementMap">
+        SELECT hna.id,hna.no,hca.name as memberIncomeSubjectName,hca.company_name as incomeSubjectName, hna.remark,
+        hna.money,hcb.name as memberPaySubjectName,hcb.company_name as paySubjectName,hca.code as
+        memberIncomesubjectCode,
+        hcb.code as memberPaysubjectCode,hna.create_time,hna.stream_no,hna.bill_no,hna.tenant_id,
+        hnd.bank_name as bank_name,hnd.external_bank_account_id as bankAccountCode,
+        hna.income_subject_id,hna.pay_subject_id,hna.member_income_subject_id,hna.pay_subject_id,
+        hna.bank_account_id,hnd.bank_code bankCode
+        from hd_transfer_bank_statement hna
+        INNER JOIN hd_company_member hca on hna.member_income_subject_id=hca.id
+        INNER JOIN hd_company_member hcb on hna.member_pay_subject_id=hcb.id
+        INNER JOIN hd_bank_account hnd on hna.bank_account_id=hnd.id where 1=1
+        <if test="startTime!=null and startTime!=''">
+            and date_format(hna.create_time, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(#{startTime}, '%Y-%m-%d')
+        </if>
+        <if test="endTime!=null and endTime!=''">
+            and date_format(hna.create_time, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{endTime}, '%Y-%m-%d')
+        </if>
+        <include refid="addMoneyTerm">
+            <property name="moneyStart" value="${moneyStart}"></property>
+            <property name="moneyEnd" value="${moneyEnd}"></property>
+        </include>
+        <if test="tenantId!=null and tenantId!=''">
+            and hna.tenant_id = #{tenantId}
+        </if>
+        <if test="paysubjectName!=null and paysubjectName!=''">
+            and hcb.company_name like CONCAT('%',#{paysubjectName},'%')
+        </if>
+        <if test="incomesubjectName!=null and incomesubjectName!=''">
+            and hca.company_name like CONCAT('%',#{incomesubjectName},'%')
+        </if>
+        <if test="params!=null and params.size>0">
+            and
+            <foreach collection="params" index="key" item="value" separator="and">
+                replace(hna.${key},'''','') like CONCAT('%',#{value},'%')
+            </foreach>
+        </if>
+        order by hna.create_time desc,hna.no desc
+    </select>
+
+
+    <select id="getNzbankAccountCount" resultType="java.lang.String">
+        SELECT count(*) from hd_transfer_bank_statement hna
+        INNER JOIN hd_company_member hca on hna.member_income_subject_id=hca.id
+        INNER JOIN hd_company_member hcb on hna.member_pay_subject_id=hcb.id
+        INNER JOIN hd_bank_account hnd on hna.bank_account_id=hnd.id where 1=1
+        <if test="startTime!=null and startTime!=''">
+            and date_format(hna.create_time, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(#{startTime}, '%Y-%m-%d')
+        </if>
+        <if test="endTime!=null and endTime!=''">
+            and date_format(hna.create_time, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{endTime}, '%Y-%m-%d')
+        </if>
+        <include refid="addMoneyTerm">
+            <property name="moneyStart" value="${moneyStart}"></property>
+            <property name="moneyEnd" value="${moneyEnd}"></property>
+        </include>
+        <if test="tenantId!=null and tenantId!=''">
+            and hna.tenant_id = #{tenantId}
+        </if>
+        <if test="paysubjectName!=null and paysubjectName!=''">
+            and hcb.company_name like CONCAT('%',#{paysubjectName},'%')
+        </if>
+        <if test="incomesubjectName!=null and incomesubjectName!=''">
+            and hca.company_name like CONCAT('%',#{incomesubjectName},'%')
+        </if>
+        <if test="params!=null and params.size>0">
+            and
+            <foreach collection="params" index="key" item="value" separator="and">
+                replace(hna.${key},'''','') like CONCAT('%',#{value},'%')
+            </foreach>
+        </if>
+    </select>
+</mapper>

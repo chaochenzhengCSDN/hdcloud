@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.hodo.iiot.group2.data.hdcloud.bank.account.bill.mapper.gf.HdBankRecordGfMapper">
+
+    <resultMap id="hdBankRecordMap" type="com.hodo.iiot.group2.data.hdcloud.bank.account.bill.entity.HdBankRecord">
+        <id property="id" column="id"/>
+        <result property="createName" column="create_name"/>
+        <result property="createDate" column="create_date"/>
+        <result property="operType" column="oper_type"/>
+        <result property="num" column="num"/>
+        <result property="remark" column="remark"/>
+        <result property="companyId" column="company_id"/>
+        <result property="flag" column="flag"/>
+        <result property="money" column="money"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="createBy" column="create_by"/>
+        <result property="bankAccountId" column="bank_account_id"/>
+        <result property="companyMemberId" column="company_id"/>
+        <result property="by" column="by"/>
+        <result property="bankAccount" column="external_bank_account_id"/>
+        <result property="bankName" column="bank_name"/>
+        <result property="createTime" column="create_time"/>
+        <result property="createById" column="create_by_id"/>
+    </resultMap>
+
+    <sql id="addMoneyTerm">
+        <if test="moneyStart!=null and moneyStart!=''">
+            and MONEY <![CDATA[ >= ]]> ${moneyStart}
+        </if>
+        <if test="moneyEnd!=null and moneyEnd!=''">
+            and MONEY <![CDATA[ <= ]]> ${moneyEnd}
+        </if>
+    </sql>
+
+    <select id="getHdBankRecordList" resultMap="hdBankRecordMap">
+        select hmc.*,hnd.external_bank_account_id,hnd.bank_name,
+        hc.name companyName
+        from hd_bank_record hmc
+        inner join hd_company hc on hmc.company_id=hc.id
+        inner join hd_bank_account hnd on hmc.bank_account_id=hnd.id
+        where 1=1
+        <if test="companyId!=null and companyId!=''">
+            and hc.company_id = #{companyId}
+        </if>
+
+        <include refid="addMoneyTerm">
+            <property name="moneyStart" value="${moneyStart}"></property>
+            <property name="moneyEnd" value="${moneyEnd}"></property>
+        </include>
+
+        <if test="startTime!=null and startTime!=''">
+            and hmc.create_time &gt;=date_format(#{startTime}, '%Y-%m-%d %H:%i:%S')
+        </if>
+        <if test="endTime!=null and endTime!=''">
+            and hmc.create_time &lt;= date_format(#{endTime}, '%Y-%m-%d %H:%i:%S')
+        </if>
+        <if test="tenantId!=null and tenantId!=''">
+            and hmc.tenant_id = #{tenantId}
+        </if>
+        <if test="num!=null and num!=''">
+            and hmc.num = #{num}
+        </if>
+        <if test="accountId!=null and accountId!=''">
+            and hmc.bank_account_id = #{accountId}
+        </if>
+
+        <if test="params!=null and params.size>0">
+            and
+            <foreach collection="params" index="key" item="value" separator="and">
+                replace(hmc.${key},'''','') like CONCAT('%',#{value},'%')
+            </foreach>
+        </if>
+        order by hmc.create_time desc
+        limit ${page},${limit}
+    </select>
+
+    <select id="getAllBankRecord" resultMap="hdBankRecordMap">
+        select hmc.*,hnd.external_bank_account_id,hnd.bank_name,
+        hc.name companyName
+        from hd_bank_record hmc
+        inner join hd_company hc on hmc.company_id=hc.id
+        inner join hd_bank_account hnd on hmc.bank_account_id=hnd.id
+        where 1=1
+        <if test="companyName!=null and companyName!=''">
+            and hc.company_id = #{companyName}
+        </if>
+        <if test="startTime!=null and startTime!=''">
+            and hmc.create_time &gt;=date_format(#{startTime}, '%Y-%m-%d %H:%i:%S')
+        </if>
+        <if test="endTime!=null and endTime!=''">
+            and hmc.create_time &lt;= date_format(#{endTime}, '%Y-%m-%d %H:%i:%S')
+        </if>
+        <include refid="addMoneyTerm">
+            <property name="moneyStart" value="${moneyStart}"></property>
+            <property name="moneyEnd" value="${moneyEnd}"></property>
+        </include>
+
+        <if test="tenantId!=null and tenantId!=''">
+            and hmc.tenant_id = #{tenantId}
+        </if>
+        <if test="num!=null and num!=''">
+            and hmc.num = #{num}
+        </if>
+        <if test="accountId!=null and accountId!=''">
+            and hmc.bank_account_id = #{accountId}
+        </if>
+        <if test="params!=null and params.size>0">
+            and
+            <foreach collection="params" index="key" item="value" separator="and">
+                replace(hmc.${key},'''','') like CONCAT('%',#{value},'%')
+            </foreach>
+        </if>
+    </select>
+
+    <resultMap id="otherValMap" type="java.util.Map">
+        <result property="income" column="income"></result>
+        <result property="pay" column="pay"></result>
+        <result property="total" column="total"></result>
+    </resultMap>
+
+    <select id="otherval" resultType="java.lang.String">
+        select count(*) from hd_bank_record hmc
+        inner join hd_company hc on hmc.company_id=hc.id
+        inner join hd_bank_account hnd on hmc.bank_account_id=hnd.id
+        where 1=1
+        <if test="companyName!=null and companyName!=''">
+            and hc.name like CONCAT('%',#{companyName},'%')
+        </if>
+        <if test="startTime!=null and startTime!=''">
+            and hmc.create_time &gt;=date_format(#{startTime}, '%Y-%m-%d %H:%i:%S')
+        </if>
+        <if test="endTime!=null and endTime!=''">
+            and hmc.create_time &lt;= date_format(#{endTime}, '%Y-%m-%d %H:%i:%S')
+        </if>
+        <include refid="addMoneyTerm">
+            <property name="moneyStart" value="${moneyStart}"></property>
+            <property name="moneyEnd" value="${moneyEnd}"></property>
+        </include>
+
+        <if test="tenantId!=null and tenantId!=''">
+            and hmc.tenant_id = #{tenantId}
+        </if>
+        <if test="num!=null and num!=''">
+            and hmc.num = #{num}
+        </if>
+        <if test="accountId!=null and accountId!=''">
+            and hmc.bank_account_id = #{accountId}
+        </if>
+        <if test="params!=null and params.size>0">
+            and
+            <foreach collection="params" index="key" item="value" separator="and">
+                replace(hmc.${key},'''','') like CONCAT('%',#{value},'%')
+            </foreach>
+        </if>
+    </select>
+
+
+    <select id="selectDistinctString" resultType="java.lang.String">
+            select distinct ${str} from hd_bank_record where ${param} = #{val} and tenant_id = #{tenantId}
+      </select>
+</mapper>

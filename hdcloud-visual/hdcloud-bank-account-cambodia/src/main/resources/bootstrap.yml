@@ -1,0 +1,67 @@
+server:
+  port: 5016
+
+spring:
+  application:
+    name: hdcloud-bank-account-cambodia
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS-HOST:172.22.0.195}:${NACOS-PORT:8848}
+#        server-addr: ${NACOS-HOST:10.10.64.19}:${NACOS-PORT:32012}
+#        ip: 10.10.64.19
+#        port: 32015
+      config:
+        server-addr: ${spring.cloud.nacos.discovery.server-addr}
+        file-extension: yml
+        shared-dataids: application-${spring.profiles.active}.${spring.cloud.nacos.config.file-extension}
+  profiles:
+    active: dev
+redis:
+  pool:
+    maxActive: 300
+    maxIdle: 100
+    maxWait: 1000
+#  host: ${REDIS_HOST:10.10.64.115}
+  host: ${REDIS_HOST:172.22.0.195}
+  port: 6379
+  ipAndPort: redis://172.22.0.195:6379
+#  ipAndPort: redis://10.10.64.115:6379
+#  password: ioX48%PS
+  password:
+  timeout: 200000
+  sysName: bankaccountCambodia
+  enable: true
+  database: 1
+  redis_mode: SINGLE
+  redis_slave_ip_port:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

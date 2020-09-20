@@ -1,0 +1,4 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+    com.hodo.hdcloud.common.log.LogAutoConfiguration
+org.springframework.context.ApplicationContextInitializer=\
+    com.hodo.hdcloud.common.log.init.ApplicationLoggerInitializer

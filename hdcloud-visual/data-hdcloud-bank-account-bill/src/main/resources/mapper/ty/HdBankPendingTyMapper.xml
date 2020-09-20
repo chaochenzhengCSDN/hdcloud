@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.hodo.iiot.group2.data.hdcloud.bank.account.bill.mapper.ty.HdBankPendingTyMapper">
+
+    <resultMap id="hdBankPendingMap" type="com.hodo.iiot.group2.data.hdcloud.bank.account.bill.entity.HdBankPending">
+        <id property="id" column="id"/>
+        <result property="accountDate" column="account_date"/>
+        <result property="no" column="no"/>
+        <result property="subjects" column="subjects"/>
+        <result property="remark" column="remark"/>
+        <result property="income" column="income"/>
+        <result property="pay" column="pay"/>
+        <result property="blance" column="blance"/>
+        <result property="companyName" column="company_name"/>
+        <result property="createName" column="create_name"/>
+        <result property="createBy" column="create_by"/>
+        <result property="rid" column="rid"/>
+        <result property="sheetid" column="sheetid"/>
+        <result property="bankName" column="bank_name2"/>
+        <result property="mySubjects" column="my_subjects"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="synaccountDate" column="synaccount_date"/>
+        <result property="accountType" column="account_type"/>
+        <result property="bankAccountId" column="bank_account_id"/>
+        <result property="createById" column="create_by_id"/>
+    </resultMap>
+
+    <sql id="addMoneyTerm">
+        <if test="moneyStart!=null and moneyEnd!=null">
+            and ((pay <![CDATA[ >= ]]> ${moneyStart} and pay <![CDATA[ <= ]]> ${moneyEnd})
+            or (income <![CDATA[ >= ]]> ${moneyStart} and income <![CDATA[ <= ]]> ${moneyEnd})
+            or (balance <![CDATA[ >= ]]> ${moneyStart} and balance <![CDATA[ <= ]]> ${moneyEnd}))
+        </if>
+        <if test="moneyStart!=null and moneyEnd==null">
+            and (pay <![CDATA[ >= ]]> ${moneyStart} or income <![CDATA[ >= ]]> ${moneyStart}
+            or balance <![CDATA[ >= ]]> ${moneyStart})
+        </if>
+        <if test="moneyStart==null and moneyEnd!=null">
+            and (pay <![CDATA[ <= ]]> ${moneyEnd} or income <![CDATA[ <= ]]> ${moneyEnd}
+            or balance <![CDATA[ <= ]]> ${moneyEnd})
+        </if>
+    </sql>
+
+    <select id="getBankPendingList" resultMap="hdBankPendingMap">
+        select hbp.*,hnd.bank_name bank_name2,hnd.external_bank_account_id bankAccount from hd_bank_pending hbp
+        inner join hd_bank_account hnd
+        on hbp.bank_account_id=hnd.id
+        where 1=1
+        <if test="startTime!=null and startTime!=''">
+            and date_format(synaccount_date, '%Y-%m-%d') &gt;=date_format(#{startTime}, '%Y-%m-%d')
+        </if>
+        <if test="endTime!=null and endTime!=''">
+            and date_format(synaccount_date, '%Y-%m-%d') &lt;= date_format(#{endTime}, '%Y-%m-%d')
+        </if>
+        <if test="tenantId!=null and tenantId!=''">
+            and hbp.tenant_id = #{tenantId}
+        </if>
+        <if test="bankName!=null and bankName!=''">
+            and hnd.bank_name like CONCAT('%',#{bankName},'%')
+        </if>
+        <include refid="addMoneyTerm">
+            <property name="moneyStart" value="${moneyStart}"></property>
+            <property name="moneyEnd" value="${moneyEnd}"></property>
+        </include>
+        <if test="params!=null and params.size>0">
+            and
+            <foreach collection="params" index="key" item="value" separator="and">
+                replace(${key},'''','') like CONCAT('%',#{value},'%')
+            </foreach>
+        </if>
+        order by synaccount_date desc
+        limit ${page},${limit}
+    </select>
+
+
+    <select id="getAllBankPending" resultMap="hdBankPendingMap">
+        select hbp.*,hnd.bank_name bank_name2,hnd.external_bank_account_id bankAccount from hd_bank_pending hbp
+        inner join hd_bank_account hnd
+        on hbp.bank_account_id=hnd.id
+        where 1=1
+        <if test="startTime!=null and startTime!=''">
+            and date_format(synaccount_date, '%Y-%m-%d') &gt;=date_format(#{startTime}, '%Y-%m-%d')
+        </if>
+        <if test="endTime!=null and endTime!=''">
+            and date_format(synaccount_date, '%Y-%m-%d') &lt;= date_format(#{endTime}, '%Y-%m-%d')
+        </if>
+        <include refid="addMoneyTerm">
+            <property name="moneyStart" value="${moneyStart}"></property>
+            <property name="moneyEnd" value="${moneyEnd}"></property>
+        </include>
+        <if test="tenantId!=null and tenantId!=''">
+            and hbp.tenant_id = #{tenantId}
+        </if>
+        <if test="params!=null and params.size>0">
+            and
+            <foreach collection="params" index="key" item="value" separator="and">
+                replace(${key},'''','') like CONCAT('%',#{value},'%')
+            </foreach>
+        </if>
+    </select>
+
+    <resultMap id="otherValMap" type="java.util.Map">
+        <result property="income" column="income"></result>
+        <result property="pay" column="pay"></result>
+        <result property="total" column="total"></result>
+    </resultMap>
+
+    <select id="getOtherVal" resultMap="otherValMap">
+        SELECT sum(pay)pay,sum(income)income,count(*)total
+        from hd_bank_pending hbp
+        inner join hd_bank_account hnd
+        on hbp.bank_account_id=hnd.id
+        where 1=1
+        <if test="startTime!=null and startTime!=''">
+            and date_format(synaccount_date, '%Y-%m-%d') &gt;=date_format(#{startTime}, '%Y-%m-%d')
+        </if>
+        <if test="endTime!=null and endTime!=''">
+            and date_format(synaccount_date, '%Y-%m-%d') &lt;= date_format(#{endTime}, '%Y-%m-%d')
+        </if>
+        <include refid="addMoneyTerm">
+            <property name="moneyStart" value="${moneyStart}"></property>
+            <property name="moneyEnd" value="${moneyEnd}"></property>
+        </include>
+        <if test="tenantId!=null and tenantId!=''">
+            and hbp.tenant_id = #{tenantId}
+        </if>
+        <if test="bankName!=null and bankName!=''">
+            and hnd.bank_name like CONCAT('%',#{bankName},'%')
+        </if>
+        <if test="params!=null and params.size>0">
+            and
+            <foreach collection="params" index="key" item="value" separator="and">
+                replace(${key},'''','') like CONCAT('%',#{value},'%')
+            </foreach>
+        </if>
+    </select>
+
+
+    <select id="selectDistinctString" resultType="java.lang.String">
+        select distinct ${str} from hd_bank_pending where ${param} = #{val} and tenant_id = #{tenantId}
+    </select>
+</mapper>

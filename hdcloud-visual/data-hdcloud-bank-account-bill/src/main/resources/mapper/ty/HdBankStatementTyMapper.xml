@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.hodo.iiot.group2.data.hdcloud.bank.account.bill.mapper.ty.HdBankStatementTyMapper">
+
+    <resultMap id="hdBankStatementMap"
+               type="com.hodo.iiot.group2.data.hdcloud.bank.account.bill.entity.HdBankStatement">
+        <id property="id" column="id"/>
+        <result property="accountDate" column="account_date"/>
+        <result property="no" column="no"/>
+        <result property="subjects" column="subjects"/>
+        <result property="remark" column="remark"/>
+        <result property="income" column="income"/>
+        <result property="pay" column="pay"/>
+        <result property="balance" column="balance"/>
+        <result property="companyId" column="company_id"/>
+        <result property="createName" column="create_name"/>
+        <result property="createBy" column="create_by"/>
+        <result property="rid" column="rid"/>
+        <result property="sheetid" column="sheetid"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="synaccountDate" column="synaccount_date"/>
+        <result property="accountType" column="account_type"/>
+        <result property="bankName" column="bank_name"/>
+        <result property="mySubjects" column="my_subjects"/>
+        <result property="sourceType" column="source_type"/>
+        <result property="sourceId" column="source_id"/>
+        <result property="bankAccountId" column="bank_account_id"/>
+        <result property="by2" column="by2"/>
+        <result property="companyMemberId" column="company_member_id"/>
+        <result property="by3" column="by3"/>
+        <result property="by4" column="by4"/>
+        <result property="createById" column="create_by_id"/>
+    </resultMap>
+
+    <sql id="addMoneyTerm">
+        <if test="moneyStart!=null and moneyEnd!=null">
+            and ((pay <![CDATA[ >= ]]> ${moneyStart} and pay <![CDATA[ <= ]]> ${moneyEnd})
+            or (income <![CDATA[ >= ]]> ${moneyStart} and income <![CDATA[ <= ]]> ${moneyEnd})
+            or (balance <![CDATA[ >= ]]> ${moneyStart} and balance <![CDATA[ <= ]]> ${moneyEnd}))
+        </if>
+        <if test="moneyStart!=null and moneyEnd==null">
+            and (pay <![CDATA[ >= ]]> ${moneyStart} or income <![CDATA[ >= ]]> ${moneyStart}
+            or balance <![CDATA[ >= ]]> ${moneyStart})
+        </if>
+        <if test="moneyStart==null and moneyEnd!=null">
+            and (pay <![CDATA[ <= ]]> ${moneyEnd} or income <![CDATA[ <= ]]> ${moneyEnd}
+            or balance <![CDATA[ <= ]]> ${moneyEnd})
+        </if>
+    </sql>
+
+    <select id="getAllAccountId" resultType="java.lang.String">
+           SELECT GROUP_CONCAT(id) FROM hd_bank_account
+      </select>
+
+    <select id="getBalance" resultType="java.lang.String">
+            SELECT sum(income-pay) from hd_bank_statement haa
+        where haa.tenant_id=#{tenantId}
+        and haa.bank_account_id = #{bankAccountId}
+        and date_format(haa.account_date, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{accountDate}, '%Y-%m-%d')
+        and haa.by2 <![CDATA[ <= ]]> #{by2}
+      </select>
+
+    <select id="getAllBalance" resultType="java.util.HashMap">
+        SELECT sum(income-pay) balance,bank_account_id bankAccountId from hd_bank_statement
+        where tenant_id=#{tenantId}
+        and bank_account_id IN
+        <foreach collection="accountList" item="account" index="index" open="(" close=")" separator=",">
+            #{account}
+        </foreach>
+        and date_format(account_date, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{accountDate}, '%Y-%m-%d')
+        and by2 <![CDATA[ <= ]]> #{by2}
+        GROUP BY bank_account_id
+    </select>
+
+    <select id="getBankStatementListBySql"
+            resultType="com.hodo.iiot.group2.data.hdcloud.bank.account.bill.entity.HdBankStatement">
+        SELECT b.id,synaccount_date,bank_account_id,date_format(account_date, '%Y-%m-%d') account_date,`no`,
+        hc.external_bank_account_id bankAccount,hc.bank_name,b.by3,
+        subjects,remark,income,pay,source_type,company_member_id,b.company_id,hcm.company_name companyName,
+        account_type,hcm.name companyMemberName,hcm.code companyMemberCode,
+        (SELECT sum(INCOME-PAY) from hd_bank_statement haa
+        INNER JOIN hd_bank_account hnd on haa.bank_account_id=hnd.id where 1=1
+        and haa.tenant_id=#{tenantId}
+        and haa.bank_account_id = b.bank_account_id
+        and (date_format(haa.ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ < ]]> date_format(b.ACCOUNT_DATE, '%Y-%m-%d') or
+        (date_format(haa.ACCOUNT_DATE, '%Y-%m-%d')=date_format(b.ACCOUNT_DATE, '%Y-%m-%d') and haa.by2
+        <![CDATA[ <= ]]> b.by2))) balance
+        from hd_bank_statement b
+        LEFT JOIN hd_bank_account hc on b.bank_account_id=hc.id
+        LEFT JOIN hd_company_member hcm on b.company_member_id = hcm.id
+        where b.tenant_id=#{tenantId}
+        <if test="startTime!=null and startTime!=''">
+            and date_format(b.account_date, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(#{startTime}, '%Y-%m-%d')
+        </if>
+        <if test="endTime!=null and endTime!=''">
+            and date_format(b.account_date, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{endTime}, '%Y-%m-%d')
+        </if>
+        <include refid="addMoneyTerm">
+            <property name="moneyStart" value="${moneyStart}"></property>
+            <property name="moneyEnd" value="${moneyEnd}"></property>
+        </include>
+        <if test="accountTypeList!=null and accountTypeList.size>0">
+            and b.account_type in
+            <foreach collection="accountTypeList" item="item" index="index" open="(" separator="," close=")">
+                (
+                #{item}
+                )
+            </foreach>
+        </if>
+        <if test="synStartTime!=null and synStartTime!=''">
+            and date_format(b.synaccount_date, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(#{synStartTime}, '%Y-%m-%d')
+        </if>
+        <if test="synEndTime!=null and synEndTime!=''">
+            and date_format(b.synaccount_date, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{synEndTime}, '%Y-%m-%d')
+        </if>
+        <if test="params!=null and params.size>0">
+            and
+            <foreach collection="params" index="key" item="value" separator="and">
+                replace(b.${key},'''','') like CONCAT('%',#{value},'%')
+            </foreach>
+        </if>
+        ORDER BY b.account_date desc,ABS(b.by2) desc limit ${page},${limit}
+    </select>
+
+    <select id="getSheetIds" resultType="java.lang.String">
+            SELECT DISTINCT sheetid from hd_bank_statement where tenant_id = #{tenantId} and sheetid is not null
+            UNION
+            SELECT DISTINCT sheetid from hd_bank_pending where tenant_id = #{tenantId} and sheetid is not null
+      </select>
+
+    <select id="getRIds" resultType="java.lang.String">
+            SELECT DISTINCT rid from hd_bank_statement where tenant_id = #{tenantId} and rid is not null
+            UNION
+            SELECT DISTINCT rid from hd_bank_pending where tenant_id = #{tenantId}  and rid is not null
+      </select>
+
+    <select id="selectMaxNo" resultType="java.math.BigDecimal">
+            select max(no) from hd_bank_statement hbs
+            where DATE_FORMAT(account_date,'%Y-%m') = DATE_FORMAT(SYSDATE(),'%Y-%m')
+            and hbs.tenant_id = #{tenantId}
+      </select>
+
+    <select id="selectMaxNoByDate" resultType="java.math.BigDecimal">
+        select max(no) from hd_bank_statement hbs
+        where DATE_FORMAT(account_date,'%Y-%m') = DATE_FORMAT(#{accountDate},'%Y-%m')
+        and hbs.tenant_id = #{tenantId}
+    </select>
+
+
+    <!--获取银行明细计算-->
+    <select id="getBankReportBalance" resultType="java.lang.String">
+        select sum(CASE WHEN date_format(ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ < ]]> #{startTime} THEN INCOME-PAY ELSE 0 END) beginBalance
+        from hd_bank_statement
+        where TENANT_ID=#{tenantId}
+        and bank_ACCOUNT_ID=#{bankAccountId}
+    </select>
+
+
+    <!--获取公司明细计算-->
+    <select id="getComReportBalance" resultType="java.lang.String">
+        select sum(CASE WHEN date_format(ACCOUNT_DATE, '%Y-%m-%d') <![CDATA[ < ]]> #{startTime} THEN INCOME-PAY ELSE 0 END) beginBalance
+        from hd_bank_statement
+        where TENANT_ID=#{tenantId}
+        and COMPANY_MEMBER_id=#{companyId}
+    </select>
+
+
+    <select id="getAllBankAccountBySql" resultMap="hdBankStatementMap">
+        SELECT b.id,synaccount_date,bank_account_id,account_date,`no`,hc.external_bank_account_id bankAccount,
+        hc.bank_name,subjects,remark,income,pay,source_type,company_member_id,
+        b.company_id,hcm.company_name companyName,balance,hcm.name companyMemberName,hcm.code companyMemberCode
+        ,(CASE WHEN account_type='0' THEN '九恒星账单'
+        WHEN account_type='1' THEN '九恒星账单'
+        WHEN account_type='2'THEN '内部账单'
+        WHEN account_type='3'THEN '手工账单'
+        ELSE '' END ) account_type
+        from hd_bank_statement b
+        LEFT JOIN hd_bank_account hc on b.bank_account_id=hc.id
+        LEFT JOIN hd_company_member hcm on b.company_member_id = hcm.id
+        where b.tenant_id=#{tenantId}
+        <if test="startTime!=null and startTime!=''">
+            and date_format(b.account_date, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(#{startTime}, '%Y-%m-%d')
+        </if>
+        <if test="endTime!=null and endTime!=''">
+            and date_format(b.account_date, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{endTime}, '%Y-%m-%d')
+        </if>
+        <include refid="addMoneyTerm">
+            <property name="moneyStart" value="${moneyStart}"></property>
+            <property name="moneyEnd" value="${moneyEnd}"></property>
+        </include>
+
+        <if test="accountTypeList!=null and accountTypeList.size>0">
+            and b.account_type in
+            <foreach collection="accountTypeList" item="item" index="index" open="(" separator="," close=")">
+                (
+                #{item}
+                )
+            </foreach>
+        </if>
+        <if test="synStartTime!=null and synStartTime!=''">
+            and date_format(b.synaccount_date, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(#{synStartTime}, '%Y-%m-%d')
+        </if>
+        <if test="synEndTime!=null and synEndTime!=''">
+            and date_format(b.synaccount_date, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{synEndTime}, '%Y-%m-%d')
+        </if>
+        <if test="params!=null and params.size>0">
+            and
+            <foreach collection="params" index="key" item="value" separator="and">
+                replace(b.${key},'''','') like CONCAT('%',#{value},'%')
+            </foreach>
+        </if>
+        ORDER BY date_format(b.account_date, '%Y-%m-%d') desc,ABS(b.by2) desc
+    </select>
+
+    <resultMap id="otherValMap" type="java.util.Map">
+        <result property="income" column="income"></result>
+        <result property="pay" column="pay"></result>
+        <result property="total" column="total"></result>
+    </resultMap>
+
+    <select id="getOtherVal" resultMap="otherValMap">
+        SELECT sum(pay)pay,sum(income)income,count(*)total
+        from hd_bank_statement b
+        LEFT JOIN hd_bank_account hc on b.bank_account_id=hc.id
+        where 1=1 and b.tenant_id=#{tenantId}
+        <if test="startTime!=null and startTime!=''">
+            and date_format(b.account_date, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(#{startTime}, '%Y-%m-%d')
+        </if>
+        <if test="endTime!=null and endTime!=''">
+            and date_format(b.account_date, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{endTime}, '%Y-%m-%d')
+        </if>
+        <include refid="addMoneyTerm">
+            <property name="moneyStart" value="${moneyStart}"></property>
+            <property name="moneyEnd" value="${moneyEnd}"></property>
+        </include>
+        <if test="accountTypeList!=null and accountTypeList.size>0">
+            and b.account_type in
+            <foreach collection="accountTypeList" item="item" index="index" open="(" separator="," close=")">
+                (
+                #{item}
+                )
+            </foreach>
+        </if>
+        <if test="synStartTime!=null and synStartTime!=''">
+            and date_format(b.synaccount_date, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(#{synStartTime}, '%Y-%m-%d')
+        </if>
+        <if test="synEndTime!=null and synEndTime!=''">
+            and date_format(b.synaccount_date, '%Y-%m-%d') <![CDATA[ <= ]]> date_format(#{synEndTime}, '%Y-%m-%d')
+        </if>
+        <if test="params!=null and params.size>0">
+            and
+            <foreach collection="params" index="key" item="value" separator="and">
+                replace(b.${key},'''','') like CONCAT('%',#{value},'%')
+            </foreach>
+        </if>
+    </select>
+</mapper>

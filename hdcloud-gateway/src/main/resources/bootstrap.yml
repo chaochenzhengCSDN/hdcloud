@@ -1,0 +1,18 @@
+server:
+  port: 5000
+
+spring:
+  application:
+    name: hdcloud-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS-HOST:10.10.64.19}:${NACOS-PORT:32012}
+        ip: 10.10.64.19
+        port: 32016
+      config:
+        server-addr: ${spring.cloud.nacos.discovery.server-addr}
+        file-extension: yml
+        shared-dataids: application-${spring.profiles.active}.${spring.cloud.nacos.config.file-extension}
+  profiles:
+    active: dev

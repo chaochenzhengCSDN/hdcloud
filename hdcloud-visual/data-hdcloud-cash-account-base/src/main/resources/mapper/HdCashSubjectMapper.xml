@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~
+  ~      Copyright (c) 2018-2025, hodo All rights reserved.
+  ~
+  ~  Redistribution and use in source and binary forms, with or without
+  ~  modification, are permitted provided that the following conditions are met:
+  ~
+  ~ Redistributions of source code must retain the above copyright notice,
+  ~  this list of conditions and the following disclaimer.
+  ~  Redistributions in binary form must reproduce the above copyright
+  ~  notice, this list of conditions and the following disclaimer in the
+  ~  documentation and/or other materials provided with the distribution.
+  ~  Neither the name of the pig4cloud.com developer nor the names of its
+  ~  contributors may be used to endorse or promote products derived from
+  ~  this software without specific prior written permission.
+  ~  Author: 江苏红豆工业互联网有限公司
+  ~
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.hodo.iiot.group2.data.hdcloud.cash.account.base.mapper.cambodia.HdCashSubjectCambodiaMapper">
+
+  <resultMap id="hdCashSubjectMap" type="com.hodo.iiot.group2.data.hdcloud.cash.account.base.entity.HdCashSubject">
+                  <id property="id" column="id"/>
+                        <result property="subject" column="subject"/>
+                        <result property="createBy" column="create_by"/>
+                        <result property="createById" column="create_by_id"/>
+                        <result property="tenantId" column="tenant_id"/>
+            </resultMap>
+    <select id="selectDistinctString" resultType="java.lang.String">
+        select distinct ${str} from hd_cash_subject where ${param} = #{val} and tenant_id = #{tenantId}
+    </select>
+</mapper>

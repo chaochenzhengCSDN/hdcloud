@@ -1,0 +1,9 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+    com.hodo.hdcloud.common.data.cache.RedisTemplateConfig,\
+    com.hodo.hdcloud.common.data.cache.RedisCacheManagerConfig,\
+    com.hodo.hdcloud.common.data.cache.RedisCacheAutoConfiguration,\
+    com.hodo.hdcloud.common.data.tenant.HodoTenantConfigProperties,\
+    com.hodo.hdcloud.common.data.tenant.TenantContextHolderFilter,\
+    com.hodo.hdcloud.common.data.tenant.HodoFeignTenantConfiguration,\
+    com.hodo.hdcloud.common.data.mybatis.MybatisPlusConfig,\
+    com.hodo.hdcloud.common.data.resolver.WebMvcConfig

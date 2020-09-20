@@ -1,0 +1,6 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+  com.hodo.hdcloud.common.core.config.JacksonConfig,\
+  com.hodo.hdcloud.common.core.config.MessageSourceConfig,\
+  com.hodo.hdcloud.common.core.config.RestTemplateConfig,\
+  com.hodo.hdcloud.common.core.util.SpringContextHolder,\
+  com.hodo.hdcloud.common.core.xss.RequestWrapperFilter

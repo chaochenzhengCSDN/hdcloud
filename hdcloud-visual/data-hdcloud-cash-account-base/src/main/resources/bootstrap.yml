@@ -1,0 +1,21 @@
+server:
+  port: 19892
+
+spring:
+  application:
+    name: data-hdcloud-cash-account-base
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS-HOST:172.22.0.195}:${NACOS-PORT:8848}
+      config:
+        server-addr: ${spring.cloud.nacos.discovery.server-addr}
+        file-extension: yml
+        shared-dataids: application-${spring.profiles.active}.${spring.cloud.nacos.config.file-extension}
+  profiles:
+    active: dev
+
+logging:
+    level:
+        tk.mybatis: debug
+        com.hodo: debug
